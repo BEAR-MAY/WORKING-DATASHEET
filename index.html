@@ -1,828 +1,1922 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>研究室論文發表管理系統</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>影像實驗室服務紀錄系統</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Font Awesome Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script>
+// 請在此填入您的 Google Apps Script 部署 URL
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw7PorXbNS7OfEj85rFuoIxHbOkgxTZvZKQxCI6mgBlB7dXv8lG9BhYxdE6Z_cPGXOm/exec";
+
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        morandi: {
+          bg: '#F4F3F0',
+          sidebar: '#6E7D7A',
+          sidebarHover: '#5B6966',
+          active: '#546360',
+          accent: '#9C9490',
+          accentLight: '#E8E5E2',
+          text: '#374151',
+          border: '#E2DFDB',
+          tf: '#8F8681',
+          axio: '#7A8684',
+          lsm: '#62706E'
+        }
+      },
+      fontFamily: { sans: ['"Noto Sans TC"', 'sans-serif'] }
+    }
+  }
+}
+</script>
+
 <style>
-  :root{
-    --navy:#1e2a4a;
-    --navy-light:#2c3b63;
-    --teal:#0d9488;
-    --teal-light:#e6f5f3;
-    --bg:#f4f6f9;
-    --card:#ffffff;
-    --border:#e2e6ee;
-    --text:#22293a;
-    --text-soft:#6b7280;
-    --amber:#f59e0b;
-    --amber-bg:#fef3e2;
-    --purple:#7c6fe0;
-    --purple-bg:#efedfc;
-    --green-bg:#e7f7ee;
-    --green:#1a9d5c;
-    --red:#e0554f;
-    --radius:14px;
-    --shadow:0 1px 3px rgba(30,42,74,0.08), 0 1px 2px rgba(30,42,74,0.06);
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    -webkit-font-smoothing:antialiased;
-  }
-  header.topbar{
-    background:var(--navy);
-    color:#fff;
-    padding:14px 24px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    position:sticky; top:0; z-index:50;
-    box-shadow:0 2px 8px rgba(0,0,0,0.15);
-  }
-  .brand{display:flex; align-items:center; gap:12px;}
-  .brand .logo{
-    width:38px; height:38px; border-radius:10px;
-    background:var(--teal);
-    display:flex; align-items:center; justify-content:center;
-    font-weight:700; font-size:16px;
-  }
-  .brand h1{font-size:16px; margin:0; font-weight:700; letter-spacing:0.3px;}
-  .brand .subtitle{font-size:10.5px; color:#aab3cc; letter-spacing:1px; margin-top:2px;}
-  nav.tabs{display:flex; gap:8px;}
-  nav.tabs button{
-    background:rgba(255,255,255,0.08);
-    color:#dfe4f2;
-    border:1px solid rgba(255,255,255,0.15);
-    padding:9px 16px;
-    border-radius:9px;
-    font-size:13.5px;
-    cursor:pointer;
-    font-weight:600;
-    transition:all .15s;
-  }
-  nav.tabs button.active{background:#fff; color:var(--navy);}
-  nav.tabs button:not(.active):hover{background:rgba(255,255,255,0.16);}
+  body { font-family: 'Noto Sans TC', sans-serif; background-color: #F4F3F0; color: #374151; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
-  main{max-width:1180px; margin:0 auto; padding:22px 20px 60px;}
-  .view{display:none;}
-  .view.active{display:block;}
-
-  .card{
-    background:var(--card);
-    border-radius:var(--radius);
-    border:1px solid var(--border);
-    box-shadow:var(--shadow);
-    padding:22px 24px;
-    margin-bottom:18px;
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #D8D5D0;
+    border-radius: 0.6rem; background-color: #FAFAF9;
+    transition: all 0.2s; font-size: 0.9rem; color: #374151;
   }
-  .card-head{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
-  .eyebrow{
-    font-size:10.5px; font-weight:800; letter-spacing:1px;
-    color:var(--teal); background:var(--teal-light);
-    padding:3px 9px; border-radius:6px;
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: #6E7D7A; background-color: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(110, 125, 122, 0.15);
   }
-  .card-head h2{font-size:16px; margin:0; font-weight:700;}
-  .card-desc{font-size:12.5px; color:var(--text-soft); margin:-6px 0 14px;}
+  input:disabled, textarea:disabled { background-color: #F1EFEA; color: #9CA3AF; cursor: not-allowed; }
 
-  label{display:block; font-size:12.5px; font-weight:600; color:var(--text-soft); margin-bottom:5px;}
-  input[type=text], input[type=number], select, textarea{
-    width:100%;
-    border:1px solid var(--border);
-    border-radius:9px;
-    padding:9px 11px;
-    font-size:13.5px;
-    background:#fbfcfe;
-    color:var(--text);
-    font-family:inherit;
+  .form-section {
+    background: white; padding: 1.75rem; border-radius: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.02);
+    margin-bottom: 1.5rem; border-left: 5px solid #9C9490;
+    transition: box-shadow 0.2s;
   }
-  input:focus, select:focus, textarea:focus{outline:2px solid var(--teal); outline-offset:1px; background:#fff;}
-  textarea{resize:vertical; min-height:44px;}
-  .field{margin-bottom:14px;}
-  .row{display:grid; gap:14px;}
-  .row.cols-2{grid-template-columns:1fr 1fr;}
-  .row.cols-3{grid-template-columns:1fr 1fr 1fr;}
-  .row.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
-  @media(max-width:760px){ .row.cols-2,.row.cols-3,.row.cols-4{grid-template-columns:1fr;} }
+  .form-section:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 8px 20px rgba(0,0,0,0.04); }
+  .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: #4B5563; margin-bottom: 0.4rem; }
 
-  .search-row{display:flex; gap:10px;}
-  .search-row input{flex:1;}
-  button.btn{
-    border:none; border-radius:9px; padding:10px 18px;
-    font-size:13.5px; font-weight:700; cursor:pointer;
-    transition:filter .15s; white-space:nowrap;
+  .nav-btn {
+    width: 100%; text-align: left; padding: 0.65rem 0.9rem; border-radius: 0.65rem;
+    transition: all 0.2s; display: flex; align-items: center; gap: 0.6rem;
+    font-size: 0.82rem; font-weight: 500; color: rgba(255,255,255,0.85);
+    cursor: pointer; border: none; background: transparent;
   }
-  button.btn:hover{filter:brightness(0.94);}
-  .btn-primary{background:var(--teal); color:#fff;}
-  .btn-navy{background:var(--navy); color:#fff;}
-  .btn-ghost{background:#fff; color:var(--text); border:1px solid var(--border);}
-  .btn-danger-ghost{background:#fff; color:var(--red); border:1px solid #f2c9c7;}
-  .btn-sm{padding:6px 11px; font-size:12px; border-radius:7px;}
-  .btn-green{background:var(--green); color:#fff;}
+  .nav-btn:hover { background: rgba(255,255,255,0.12); color: #FFF; }
+  .nav-btn.nav-active { background: #546360; color: #FFF; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
 
-  .candidates{display:grid; gap:10px; margin-top:14px;}
-  .candidate{
-    border:1.5px solid var(--border); border-radius:11px; padding:12px 14px;
-    cursor:pointer; transition:all .15s; background:#fbfcfe;
+  .checkbox-pill { display: inline-flex; align-items: center; cursor: pointer; }
+  .checkbox-pill input[type="checkbox"], .checkbox-pill input[type="radio"] { display: none; }
+  .checkbox-pill span {
+    padding: 0.35rem 0.8rem; border-radius: 9999px; border: 1px solid #D1D5DB;
+    font-size: 0.8rem; font-weight: 500; color: #4B5563; background: #FAFAFA;
+    transition: all 0.18s; user-select: none;
   }
-  .candidate:hover{border-color:var(--teal); background:var(--teal-light);}
-  .candidate.selected{border-color:var(--teal); background:var(--teal-light); box-shadow:0 0 0 1px var(--teal);}
-  .candidate .c-title{font-weight:700; font-size:13.5px; margin-bottom:4px; line-height:1.4;}
-  .candidate .c-meta{font-size:12px; color:var(--text-soft);}
-
-  .banner{
-    display:flex; align-items:center; gap:10px;
-    padding:11px 14px; border-radius:10px; font-size:13px; font-weight:600;
-    margin:14px 0;
+  .checkbox-pill input:checked + span {
+    background: #6E7D7A; color: #FFF; border-color: #6E7D7A; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
-  .banner.warn{background:var(--amber-bg); color:#8a5a10; border:1px solid #f3d9a6;}
-  .banner.info{background:var(--teal-light); color:#0b6b62; border:1px solid #b8e4de;}
-  .banner.ok{background:var(--green-bg); color:#136b41; border:1px solid #b8e8cd;}
+  .checkbox-pill:hover span { border-color: #6E7D7A; color: #6E7D7A; }
+  .checkbox-pill input:checked + span:hover { background: #5B6966; color: #FFF; }
 
-  .chip-group{display:flex; flex-wrap:wrap; gap:8px;}
-  .chip{
-    border:1.5px solid var(--border); background:#fff; color:var(--text);
-    padding:7px 14px; border-radius:20px; font-size:12.5px; font-weight:600;
-    cursor:pointer; transition:all .12s;
+  /* 染色樣態「其他」選填：沿用全站既有的 pill 選取樣式，只多一個緊湊的自訂輸入框 */
+  .staining-other-input {
+    width: 5rem; padding: 0.35rem 0.6rem !important; font-size: 0.8rem;
   }
-  .chip.active{border-color:var(--teal); background:var(--teal); color:#fff;}
-  .chip.ack.active{border-color:var(--purple); background:var(--purple); color:#fff;}
 
-  .form-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border);}
-
-  /* table-ish list rows for recent / results */
-  .plist{width:100%; border-collapse:collapse;}
-  .plist th{
-    text-align:left; font-size:11.5px; color:var(--text-soft); font-weight:700;
-    padding:9px 10px; border-bottom:2px solid var(--border); white-space:nowrap;
+  .stat-card { position: relative; overflow: hidden; }
+  .stat-card .stat-icon {
+    position: absolute; right: 0.75rem; top: 0.75rem; font-size: 1.6rem; opacity: 0.13;
   }
-  .plist td{padding:12px 10px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top;}
-  .plist tr:hover td{background:#fafbfd;}
-  .p-title{font-weight:700; font-size:13.5px; line-height:1.4; margin-bottom:3px;}
-  .p-sub{font-size:11.5px; color:var(--text-soft);}
-  .badge{
-    display:inline-flex; align-items:center; gap:3px;
-    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:6px; margin:1px 3px 1px 0;
+
+  .icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.55rem; display: inline-flex;
+    align-items: center; justify-content: center; transition: all 0.15s; font-size: 0.78rem;
+    border: 1px solid transparent; cursor: pointer;
   }
-  .badge-role{background:var(--purple-bg); color:var(--purple);}
-  .badge-cat{background:var(--amber-bg); color:#8a5a10;}
-  .badge-topic{background:var(--teal-light); color:#0b6b62;}
-  .badge-ack{background:#eef1f8; color:#4a5578;}
-  .empty-state{text-align:center; padding:40px 20px; color:var(--text-soft); font-size:13px;}
+  .icon-btn.view { color: #546360; background: #EEF0EE; }
+  .icon-btn.view:hover { background: #546360; color: #fff; }
+  .icon-btn.edit { color: #9C7A3C; background: #FBF3E4; }
+  .icon-btn.edit:hover { background: #B5883F; color: #fff; }
 
-  /* filter grid */
-  .filter-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:14px;}
-  @media(max-width:980px){ .filter-grid{grid-template-columns:repeat(3,1fr);} }
-  @media(max-width:600px){ .filter-grid{grid-template-columns:repeat(2,1fr);} }
-  .filter-actions{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
-  .result-count{font-size:12.5px; color:var(--text-soft); font-weight:600;}
-
-  .toast{
-    position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff;
-    padding:13px 20px; border-radius:10px; font-size:13px; font-weight:600;
-    box-shadow:0 6px 20px rgba(0,0,0,0.2); z-index:200; opacity:0; transform:translateY(10px);
-    transition:all .25s;
+  /* ===== Modal ===== */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(30,32,30,0.45); backdrop-filter: blur(2px);
+    display: none; align-items: flex-start; justify-content: center; z-index: 50;
+    padding: 3rem 1rem; overflow-y: auto;
   }
-  .toast.show{opacity:1; transform:translateY(0);}
-  .toast.err{background:var(--red);}
-
-  .spinner{
-    display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4);
-    border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; margin-right:6px;
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease-out; }
+  .modal-box {
+    background: #fff; border-radius: 1.1rem; width: 100%; max-width: 52rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden;
   }
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .loading-text{font-size:12.5px; color:var(--text-soft); display:flex; align-items:center; gap:8px;}
-  .spinner-dark{border:2px solid #d7dce6; border-top-color:var(--teal); width:14px; height:14px; border-radius:50%; display:inline-block; animation:spin .7s linear infinite;}
-
-  .journal-info-box{
-    background:#fbfcfe; border:1px dashed var(--border); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--text-soft);
+  .modal-header {
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid #EEECE8; display: flex;
+    align-items: center; justify-content: space-between; background: #FAFAF8;
   }
-  .journal-info-box b{color:var(--text);}
+  .modal-body { padding: 1.5rem; max-height: 65vh; overflow-y: auto; }
+  .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid #EEECE8; display: flex; justify-content: flex-end; gap: 0.6rem; background: #FAFAF8; }
 
-  ::placeholder{color:#a3aabb;}
+
+  /* ===== Toast ===== */
+  #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; }
+  .toast {
+    min-width: 16rem; max-width: 22rem; padding: 0.8rem 1rem; border-radius: 0.75rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15); color: #fff; font-size: 0.85rem; font-weight: 500;
+    display: flex; align-items: center; gap: 0.6rem; animation: slideIn 0.25s ease-out;
+  }
+  .toast.success { background: #546360; }
+  .toast.error { background: #B5544A; }
+  .toast.info { background: #6E7D7A; }
+  @keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+
+  .detail-row { transition: background 0.15s; }
+  .detail-row.expanded-parent { background: #FAFAF8; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #F1EFEA; }
+  ::-webkit-scrollbar-thumb { background: #C4C0B9; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9C9490; }
 </style>
 </head>
-<body>
 
-<header class="topbar">
-  <div class="brand">
-    <div class="logo">Dx</div>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+<!-- ===== Toast 通知容器 ===== -->
+<div id="toast-container"></div>
+
+<!-- ===== 側邊導覽列 ===== -->
+<nav class="w-full md:w-64 bg-morandi-sidebar text-white flex flex-col shadow-xl z-20 flex-shrink-0">
+  <div class="p-6 border-b border-white/10 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl flex-shrink-0">
+      <i class="fas fa-microscope text-white"></i>
+    </div>
     <div>
-      <h1>研究室論文發表管理系統</h1>
-      <div class="subtitle">PUBMED-LINKED PUBLICATION TRACKER</div>
+      <h1 class="text-base font-bold tracking-wider leading-tight">顯微影像核心</h1>
+      <span class="text-xs text-white/70">個人服務紀錄系統</span>
     </div>
   </div>
-  <nav class="tabs">
-    <button id="tabAddBtn" class="active" onclick="switchView('add')">＋ 新增論文資料</button>
-    <button id="tabDashBtn" onclick="switchView('dash')">論文彙整</button>
-  </nav>
-</header>
 
-<main>
-
-<!-- ============ VIEW 1: 新增論文資料 ============ -->
-<div id="view-add" class="view active">
-
-  <div class="card">
-    <div class="card-head"><span class="eyebrow">STEP 1</span><h2>PubMed 論文查詢</h2></div>
-    <p class="card-desc">輸入論文名稱（建議貼上完整或接近完整的英文標題）以自 PubMed 取得正確資料，避免手動輸入或 AI 推測造成錯誤。</p>
-    <div class="search-row">
-      <input type="text" id="searchQuery" placeholder="例：Acute kidney injury biomarkers in critically ill patients">
-      <button class="btn btn-primary" onclick="doSearch()">🔍 搜尋</button>
+  <div class="flex-1 overflow-y-auto p-3 space-y-4">
+    <!-- TissueFAXS -->
+    <div>
+      <div class="text-[11px] font-bold tracking-wider text-white/50 px-3 mb-1 uppercase"><i class="fas fa-circle-dot mr-1 text-[8px]"></i> 全景組織細胞 (TissueFAXS)</div>
+      <button class="nav-btn nav-active" id="nav-tf-form" onclick="switchView('tf','form')">
+        <i class="fas fa-pen-to-square w-4 text-center"></i> 新增服務紀錄
+      </button>
+      <button class="nav-btn" id="nav-tf-dash" onclick="switchView('tf','dash')">
+        <i class="fas fa-chart-pie w-4 text-center"></i> 歷史服務彙整
+      </button>
     </div>
-    <div id="searchStatus"></div>
-    <div id="candidateList" class="candidates"></div>
+
+    <!-- Axio Observer 7 -->
+    <div>
+      <div class="text-[11px] font-bold tracking-wider text-white/50 px-3 mb-1 uppercase"><i class="fas fa-circle-dot mr-1 text-[8px]"></i> 電動倒立螢光 (Axio Observer 7)</div>
+      <button class="nav-btn" id="nav-axio-form" onclick="switchView('axio','form')">
+        <i class="fas fa-pen-to-square w-4 text-center"></i> 新增服務紀錄
+      </button>
+      <button class="nav-btn" id="nav-axio-dash" onclick="switchView('axio','dash')">
+        <i class="fas fa-chart-pie w-4 text-center"></i> 歷史服務彙整
+      </button>
+    </div>
+
+    <!-- LSM 880 -->
+    <div>
+      <div class="text-[11px] font-bold tracking-wider text-white/50 px-3 mb-1 uppercase"><i class="fas fa-circle-dot mr-1 text-[8px]"></i> 倒立共軛焦 (ZEISS LSM880)</div>
+      <button class="nav-btn" id="nav-lsm-form" onclick="switchView('lsm','form')">
+        <i class="fas fa-pen-to-square w-4 text-center"></i> 新增服務紀錄
+      </button>
+      <button class="nav-btn" id="nav-lsm-dash" onclick="switchView('lsm','dash')">
+        <i class="fas fa-chart-pie w-4 text-center"></i> 歷史服務彙整
+      </button>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="card-head"><span class="eyebrow">STEP 2</span><h2>自動辨識資料（可手動修正）</h2></div>
-    <div id="dupWarning"></div>
+  <!-- 資料即時同步狀態 -->
+  <div class="p-3 border-t border-white/10">
+    <button onclick="manualSync()" class="w-full py-2 px-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2">
+      <i id="sync-icon" class="fas fa-arrows-rotate"></i> 重新載入 / 同步試算表
+    </button>
+    <div id="sync-time" class="text-[10px] text-white/40 text-center mt-1.5">尚未載入資料</div>
+  </div>
+</nav>
 
-    <div class="field">
-      <label>論文名稱</label>
-      <textarea id="f_title" placeholder="選取候選論文後自動帶入，或手動輸入"></textarea>
+<!-- ===== 主要操作區域 ===== -->
+<main class="flex-1 overflow-y-auto p-4 md:p-8 w-full min-w-0">
+<div class="max-w-7xl mx-auto">
+
+  <!-- ================================================================= -->
+  <!-- 1. TissueFAXS: 新增紀錄                                            -->
+  <!-- ================================================================= -->
+  <div id="view-tf-form" class="tab-content active">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-morandi-tf/15 flex items-center justify-center text-morandi-tf font-bold">
+        <i class="fas fa-plus"></i>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-gray-800">新增服務紀錄</h2>
+        <p class="text-xs text-gray-400">全景組織細胞分析儀 (TissueGnostics TissueFAXS)</p>
+      </div>
     </div>
-    <div class="field">
-      <label>全部作者</label>
-      <textarea id="f_authors" placeholder="Lee JH, Chen YT, Wang KC..."></textarea>
+
+    <form id="form-tf" onsubmit="handleFormSubmit(event, 'TissueFAXS')">
+      <div class="form-section" style="border-left-color: #8F8681;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-id-card text-morandi-tf"></i> 客戶基本資料
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div><label class="form-label">服務日期 <span class="text-red-500">*</span></label><input type="date" id="tf-date" required></div>
+          <div><label class="form-label">單位 <span class="text-red-500">*</span></label><input type="text" id="tf-unit" placeholder="例: 生科系" required></div>
+          <div><label class="form-label">計畫主持人 (PI) <span class="text-red-500">*</span></label><input type="text" id="tf-pi" placeholder="例: 王教授" required></div>
+          <div><label class="form-label">服務使用人 <span class="text-red-500">*</span></label><input type="text" id="tf-user" placeholder="例: 陳同學" required></div>
+          <div class="md:col-span-2"><label class="form-label">資料夾名稱</label><input type="text" id="tf-folder" placeholder="例: SJL"></div>
+        </div>
+      </div>
+
+      <div class="form-section" style="border-left-color: #8F8681;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-vial text-morandi-tf"></i> 樣本與影像資訊
+        </h3>
+
+        <div class="mb-4">
+          <label class="form-label">影像類型</label>
+          <div class="flex gap-3">
+            <label class="checkbox-pill"><input type="radio" name="tf-imageType" value="螢光" checked onchange="toggleTfImageType('螢光')"><span><i class="fas fa-sun mr-1 text-xs"></i> 螢光</span></label>
+            <label class="checkbox-pill"><input type="radio" name="tf-imageType" value="可見光" onchange="toggleTfImageType('可見光')"><span><i class="fas fa-lightbulb mr-1 text-xs"></i> 可見光</span></label>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">物鏡倍率</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="tf-mag" value="10x"><span>10x</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-mag" value="20x"><span>20x</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-mag" value="40x"><span>40x</span></label>
+          </div>
+        </div>
+
+        <div id="tf-staining-container" class="hidden mb-4">
+          <label class="form-label">染色樣態</label>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="tf-stainingType" value="H&E" onchange="toggleStainingOther('tf')"><span>H&E</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-stainingType" value="DAB" onchange="toggleStainingOther('tf')"><span>DAB</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-stainingType" value="PAS" onchange="toggleStainingOther('tf')"><span>PAS</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-stainingType" value="MTS" onchange="toggleStainingOther('tf')"><span>MTS</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-stainingType" value="其他" onchange="toggleStainingOther('tf')"><span>其他</span></label>
+            <input type="text" id="tf-staining-other" class="hidden staining-other-input" placeholder="請輸入">
+          </div>
+        </div>
+
+        <div id="tf-wavelength-container" class="mb-4">
+          <label class="form-label">光源波長</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="tf-wavelength" value="mDAPI"><span>mDAPI</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-wavelength" value="mFITC"><span>mFITC</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-wavelength" value="mTEXA"><span>mTEXA</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-wavelength" value="sDAPI"><span>sDAPI</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-wavelength" value="sGFP"><span>sGFP</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-wavelength" value="sRho"><span>sRho</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="tf-wavelength" value="sCy5"><span>sCy5</span></label>
+          </div>
+        </div>
+
+        <!-- 獨立通道動態設定區（螢光專用） -->
+        <div id="tf-fl-params-block" class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-4">
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-2"><i class="fas fa-layer-group mr-1"></i> 個別螢光參數</label>
+          <div id="tf-channels-list" class="space-y-2"></div>
+          <button type="button" onclick="addFluoChannel('tf')" class="mt-3 text-xs px-3 py-1.5 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition font-medium">
+            <i class="fas fa-plus mr-1"></i> 新增螢光參數
+          </button>
+        </div>
+
+        <!-- 可見光專用條件 -->
+        <div id="tf-bf-params-block" class="hidden p-4 bg-gray-50 rounded-xl border border-gray-200 mb-4">
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-2">可見光拍攝參數</label>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div><label class="form-label text-xs">Condensor 數值</label><input type="text" id="tf-bf-cond" placeholder="例: 0.55"></div>
+            <div><label class="form-label text-xs">燈源亮度 (%)</label><input type="text" id="tf-bf-light" placeholder="例: 8.0"></div>
+            <div><label class="form-label text-xs">曝光時間 (ms)</label><input type="text" id="tf-bf-exp" placeholder="例: 15ms"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="form-label">樣本片數 (玻片數)</label><input type="number" id="tf-slides" value="1" min="0" required></div>
+          <div><label class="form-label">其他備註</label><input type="text" id="tf-staining" placeholder="例: LABLE朝上"></div>
+        </div>
+      </div>
+
+      <div class="form-section" style="border-left-color: #8F8681;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-clock text-morandi-tf"></i> 服務時數與狀態
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div><label class="form-label">收費時數 (小時)</label><input type="number" step="0.5" id="tf-charged" value="0" min="0"></div>
+          <div><label class="form-label">非收費時數 (小時)</label><input type="number" step="0.5" id="tf-nonCharged" value="0" min="0"></div>
+          <div><label class="form-label">服務人次</label><input type="number" id="tf-count" value="1" min="1"></div>
+        </div>
+        <div class="space-y-4">
+          <div><label class="form-label">服務狀況</label><input type="text" id="tf-status" placeholder="例: 正常執行完畢"></div>
+          <div><label class="form-label"><i class="fas fa-flask mr-1 text-gray-400"></i> 研究內容</label><input type="text" id="tf-notes" placeholder="研究主題或實驗方向"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mb-10">
+        <button type="reset" class="px-5 py-2 rounded-xl bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition">清空重填</button>
+        <button type="submit" class="px-6 py-2 rounded-xl bg-morandi-tf hover:opacity-90 text-white font-bold transition shadow-md flex items-center gap-2">
+          <i class="fas fa-paper-plane"></i> 儲存
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 2. Axio Observer 7: 新增紀錄                                      -->
+  <!-- ================================================================= -->
+  <div id="view-axio-form" class="tab-content">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-morandi-axio/15 flex items-center justify-center text-morandi-axio font-bold">
+        <i class="fas fa-plus"></i>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-gray-800">新增服務紀錄</h2>
+        <p class="text-xs text-gray-400">電動倒立螢光顯微鏡 (ZEISS Axio Observer 7)</p>
+      </div>
     </div>
-    <div class="row cols-2">
-      <div class="field"><label>期刊全名</label><input type="text" id="f_journalFull" placeholder="例：New England Journal of Medicine"></div>
-      <div class="field"><label>期刊簡稱（用於 Cite 顯示）</label><input type="text" id="f_journalAbbr" placeholder="例：N Engl J Med"></div>
+
+    <form id="form-axio" onsubmit="handleFormSubmit(event, 'AxioObserver')">
+      <div class="form-section" style="border-left-color: #7A8684;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-id-card" style="color:#7A8684"></i> 客戶基本資料
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div><label class="form-label">服務日期 <span class="text-red-500">*</span></label><input type="date" id="axio-date" required></div>
+          <div><label class="form-label">單位 <span class="text-red-500">*</span></label><input type="text" id="axio-unit" placeholder="例: 醫學研究部" required></div>
+          <div><label class="form-label">計畫主持人 (PI) <span class="text-red-500">*</span></label><input type="text" id="axio-pi" placeholder="例: 李教授" required></div>
+          <div><label class="form-label">服務使用人 <span class="text-red-500">*</span></label><input type="text" id="axio-user" placeholder="例: 林博士" required></div>
+          <div class="md:col-span-2"><label class="form-label">資料夾名稱</label><input type="text" id="axio-folder" placeholder="例: SJL"></div>
+        </div>
+      </div>
+
+      <div class="form-section" style="border-left-color: #7A8684;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-vial" style="color:#7A8684"></i> 樣本與影像資訊
+        </h3>
+
+        <div class="mb-4">
+          <label class="form-label">影像類型</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="axio-shootType" value="一般拍照"><span>一般拍照</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-shootType" value="曠時攝影"><span>曠時攝影</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-shootType" value="大圖拼接"><span>大圖拼接</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-shootType" value="Z軸"><span>Z軸</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-shootType" value="環境控制"><span>環境控制</span></label>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 p-3 bg-gray-50 rounded-lg text-xs">
+            <div><label class="form-label text-[11px]">曠時攝影 (總時間/區間)</label><input type="text" id="axio-timelapse" placeholder="例: 12hr / 每15分"></div>
+            <div><label class="form-label text-[11px]">Z軸 (層數/步距)</label><input type="text" id="axio-zstack" placeholder="例: 20層 / 1μm"></div>
+            <div><label class="form-label text-[11px]">環境控制 (溫度/加濕)</label><input type="text" id="axio-env" placeholder="例: 37°C / 有加濕"></div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">物鏡倍率</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="axio-mag" value="10x"><span>10x</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-mag" value="20x"><span>20x</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-mag" value="40x"><span>40x</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-mag" value="20x玻"><span>20x玻</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-mag" value="40x玻"><span>40x玻</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-mag" value="63x油"><span>63x油</span></label>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">光源波長</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="PH1"><span>PH1</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="PH2"><span>PH2</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="DIC"><span>DIC</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="DAPI"><span>DAPI</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="FITC"><span>FITC</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="DsRED"><span>DsRED</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="A594"><span>A594</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="axio-wavelength" value="Cy5"><span>Cy5</span></label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div><label class="form-label">樣本載體</label><input type="text" id="axio-carrier" placeholder="例: SLIDE / 6-well plate"></div>
+          <div><label class="form-label">樣本內容</label><input type="text" id="axio-content" placeholder="例: CELL / TISSUE"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div><label class="form-label">樣本數 (片數/盤數)</label><input type="number" id="axio-slides" value="1" min="0" required></div>
+          <div><label class="form-label">拍照位點數</label><input type="number" id="axio-positions" value="1" min="0"></div>
+        </div>
+
+        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-4">
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-2"><i class="fas fa-layer-group mr-1"></i> 個別光源參數</label>
+          <div id="axio-channels-list" class="space-y-2"></div>
+          <button type="button" onclick="addFluoChannel('axio')" class="mt-3 text-xs px-3 py-1.5 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition font-medium">
+            <i class="fas fa-plus mr-1"></i> 新增光源參數
+          </button>
+        </div>
+
+        <div><label class="form-label">對焦策略</label><input type="text" id="axio-focus" placeholder="例: Definite Focus 自動對焦"></div>
+      </div>
+
+      <div class="form-section" style="border-left-color: #7A8684;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-clock" style="color:#7A8684"></i> 服務時數與狀態
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div><label class="form-label">收費時數 (小時)</label><input type="number" step="0.5" id="axio-charged" value="0" min="0"></div>
+          <div><label class="form-label">非收費時數 (小時)</label><input type="number" step="0.5" id="axio-nonCharged" value="0" min="0"></div>
+          <div><label class="form-label">服務人次</label><input type="number" id="axio-count" value="1" min="1"></div>
+        </div>
+        <div class="space-y-4">
+          <div><label class="form-label">服務狀況</label><input type="text" id="axio-status" placeholder="例: 正常運作"></div>
+          <div><label class="form-label"><i class="fas fa-flask mr-1 text-gray-400"></i> 研究內容</label><input type="text" id="axio-notes" placeholder="研究主題或實驗方向"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mb-10">
+        <button type="reset" class="px-5 py-2 rounded-xl bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition">清空重填</button>
+        <button type="submit" class="px-6 py-2 rounded-xl text-white font-bold transition shadow-md flex items-center gap-2" style="background:#7A8684">
+          <i class="fas fa-paper-plane"></i> 儲存
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 3. LSM 880: 新增紀錄                                              -->
+  <!-- ================================================================= -->
+  <div id="view-lsm-form" class="tab-content">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-morandi-lsm/15 flex items-center justify-center text-morandi-lsm font-bold">
+        <i class="fas fa-plus"></i>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-gray-800">新增服務紀錄</h2>
+        <p class="text-xs text-gray-400">倒立式共軛焦顯微鏡 (ZEISS LSM 880)</p>
+      </div>
     </div>
-    <div class="row cols-4">
-      <div class="field"><label>出版年份</label><input type="text" id="f_pubYear"></div>
-      <div class="field"><label>出版月份</label><input type="text" id="f_pubMonth"></div>
-      <div class="field"><label>完整卷期頁數</label><input type="text" id="f_volumeIssuePages" placeholder="82(6):1046-1055"></div>
-      <div class="field"><label>論文類型</label>
-        <select id="f_pubType">
-          <option>Article</option><option>Review</option><option>Meta-Analysis</option>
-          <option>Case Report</option><option>Letter</option><option>Other</option>
+
+    <form id="form-lsm" onsubmit="handleFormSubmit(event, 'LSM880')">
+      <div class="form-section" style="border-left-color: #62706E;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-id-card" style="color:#62706E"></i> 客戶基本資料
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div><label class="form-label">服務日期 <span class="text-red-500">*</span></label><input type="date" id="lsm-date" required></div>
+          <div><label class="form-label">單位 <span class="text-red-500">*</span></label><input type="text" id="lsm-unit" placeholder="例: 藥學系" required></div>
+          <div><label class="form-label">計畫主持人 (PI) <span class="text-red-500">*</span></label><input type="text" id="lsm-pi" placeholder="例: 張教授" required></div>
+          <div><label class="form-label">服務使用人 <span class="text-red-500">*</span></label><input type="text" id="lsm-user" placeholder="例: 趙同學" required></div>
+          <div class="md:col-span-2"><label class="form-label">資料夾名稱</label><input type="text" id="lsm-folder" placeholder="例: SJL"></div>
+        </div>
+      </div>
+
+      <div class="form-section" style="border-left-color: #62706E;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-vial" style="color:#62706E"></i> 樣本與影像資訊
+        </h3>
+
+        <div class="mb-4">
+          <label class="form-label">影像類型</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-shootType" value="一般拍照"><span>一般拍照</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-shootType" value="曠時攝影"><span>曠時攝影</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-shootType" value="大圖拼接"><span>大圖拼接</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-shootType" value="Z軸"><span>Z軸</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-shootType" value="環境控制"><span>環境控制</span></label>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 p-3 bg-gray-50 rounded-lg text-xs">
+            <div><label class="form-label text-[11px]">曠時攝影 (總時間/區間)</label><input type="text" id="lsm-timelapse" placeholder="例: 6hr / 每10分"></div>
+            <div><label class="form-label text-[11px]">Z軸 (層數/步距)</label><input type="text" id="lsm-zstack" placeholder="例: 35層 / 0.4μm"></div>
+            <div><label class="form-label text-[11px]">環境控制 (溫度/加濕)</label><input type="text" id="lsm-env" placeholder="例: 37°C / 有加濕"></div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">物鏡倍率</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-mag" value="5X"><span>5X</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-mag" value="10X"><span>10X</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-mag" value="20X"><span>20X</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-mag" value="40X"><span>40X</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-mag" value="63X"><span>63X</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-mag" value="100X"><span>100X</span></label>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">雷射波長</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-wavelength" value="DIC"><span>DIC</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-wavelength" value="DAPI"><span>DAPI</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-wavelength" value="FITC"><span>FITC</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-wavelength" value="RHO"><span>RHO</span></label>
+            <label class="checkbox-pill"><input type="checkbox" name="lsm-wavelength" value="CY5"><span>CY5</span></label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div><label class="form-label">樣本載體</label><input type="text" id="lsm-carrier" placeholder="例: SLIDE / Glass-bottom Dish"></div>
+          <div><label class="form-label">樣本內容</label><input type="text" id="lsm-content" placeholder="例: CELL / TISSUE"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div><label class="form-label">樣本數 (片數/盤數)</label><input type="number" id="lsm-slides" value="1" min="0" required></div>
+          <div><label class="form-label">拍照位點數</label><input type="number" id="lsm-positions" value="1" min="0"></div>
+        </div>
+
+        <!-- 掃描參數（新增） -->
+        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-4">
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-3"><i class="fas fa-sliders mr-1"></i> 掃描參數</label>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div><label class="form-label text-[11px]">Frame Size</label><input type="text" id="lsm-frameSize" placeholder="例: 1024x1024"></div>
+            <div><label class="form-label text-[11px]">Speed</label><input type="text" id="lsm-scanSpeed" placeholder="例: 7"></div>
+            <div><label class="form-label text-[11px]">Average Number</label><input type="text" id="lsm-avgNumber" placeholder="例: 2"></div>
+            <div><label class="form-label text-[11px]">Zoom</label><input type="text" id="lsm-zoom" placeholder="例: 1.0"></div>
+            <div>
+              <label class="form-label text-[11px]">Method</label>
+              <select id="lsm-method">
+                <option value="">未指定</option>
+                <option value="Mean">Mean</option>
+                <option value="Sum">Sum</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-4">
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-2"><i class="fas fa-layer-group mr-1"></i> 獨立共軛焦通道參數</label>
+          <div id="lsm-channels-list" class="space-y-2"></div>
+          <button type="button" onclick="addFluoChannel('lsm')" class="mt-3 text-xs px-3 py-1.5 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition font-medium">
+            <i class="fas fa-plus mr-1"></i> 新增通道 (Channel)
+          </button>
+        </div>
+      </div>
+
+      <div class="form-section" style="border-left-color: #62706E;">
+        <h3 class="text-sm font-bold text-gray-700 border-b pb-3 mb-4 flex items-center gap-2">
+          <i class="fas fa-clock" style="color:#62706E"></i> 服務時數與狀態
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div><label class="form-label">收費時數 (小時)</label><input type="number" step="0.5" id="lsm-charged" value="0" min="0"></div>
+          <div><label class="form-label">非收費時數 (小時)</label><input type="number" step="0.5" id="lsm-nonCharged" value="0" min="0"></div>
+          <div><label class="form-label">服務人次</label><input type="number" id="lsm-count" value="1" min="1"></div>
+        </div>
+        <div class="space-y-4">
+          <div><label class="form-label">服務狀況</label><input type="text" id="lsm-status" placeholder="例: 雷射正常"></div>
+          <div><label class="form-label"><i class="fas fa-flask mr-1 text-gray-400"></i> 研究內容</label><input type="text" id="lsm-notes" placeholder="研究主題或實驗方向"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mb-10">
+        <button type="reset" class="px-5 py-2 rounded-xl bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition">清空重填</button>
+        <button type="submit" class="px-6 py-2 rounded-xl text-white font-bold transition shadow-md flex items-center gap-2" style="background:#62706E">
+          <i class="fas fa-paper-plane"></i> 儲存
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 4. 後台彙整與即時統計                                              -->
+  <!-- ================================================================= -->
+  <div id="view-dashboard" class="tab-content">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div class="flex items-center gap-3">
+        <div id="dash-inst-icon" class="w-10 h-10 rounded-xl bg-morandi-sidebar/15 flex items-center justify-center text-morandi-sidebar font-bold text-lg">
+          <i class="fas fa-chart-pie"></i>
+        </div>
+        <div>
+          <h2 id="dash-inst-title" class="text-xl font-bold text-gray-800">後台數據彙整</h2>
+          <p id="dash-inst-subtitle" class="text-xs text-gray-400">即時統計與歷史服務明細</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm">
+        <span class="text-xs font-bold text-gray-500 whitespace-nowrap"><i class="fas fa-calendar-alt mr-1"></i>統計年份:</span>
+        <select id="dash-year-filter" onchange="renderCurrentDashboard()" class="text-xs font-semibold bg-transparent border-0 p-1 focus:ring-0 cursor-pointer">
+          <option value="ALL">全部年份 (歷年總計)</option>
         </select>
       </div>
     </div>
-    <div class="row cols-3">
-      <div class="field"><label>PMID</label><input type="text" id="f_pmid"></div>
-      <div class="field"><label>DOI</label><input type="text" id="f_doi"></div>
-      <div class="field"><label>引用次數</label><input type="number" id="f_citationCount" placeholder="來自 NIH iCite"></div>
+
+    <!-- 數據統計卡片區 -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm">
+        <i class="fas fa-list-check stat-icon text-morandi-sidebar"></i>
+        <div class="text-xs font-bold text-gray-400 mb-1">累積服務次數</div>
+        <div id="stat-total-count" class="text-2xl font-black text-gray-800">0</div>
+        <div class="text-[10px] text-gray-400 mt-1">次預約服務紀錄</div>
+      </div>
+      <div class="stat-card bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm">
+        <i class="fas fa-coins stat-icon text-morandi-sidebar"></i>
+        <div class="text-xs font-bold text-gray-400 mb-1">總收費時數</div>
+        <div id="stat-charged-hours" class="text-2xl font-black text-morandi-sidebar">0 <span class="text-xs font-normal">hr</span></div>
+        <div class="text-[10px] text-gray-400 mt-1">實際計費時數</div>
+      </div>
+      <div class="stat-card bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm">
+        <i class="fas fa-graduation-cap stat-icon text-gray-500"></i>
+        <div class="text-xs font-bold text-gray-400 mb-1">總非收費時數</div>
+        <div id="stat-noncharged-hours" class="text-2xl font-black text-gray-600">0 <span class="text-xs font-normal">hr</span></div>
+        <div class="text-[10px] text-gray-400 mt-1">教育訓練 / 維護測試</div>
+      </div>
+      <div class="stat-card bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm">
+        <i class="fas fa-layer-group stat-icon text-morandi-tf"></i>
+        <div class="text-xs font-bold text-gray-400 mb-1">累計處理玻片/樣本數</div>
+        <div id="stat-total-slides" class="text-2xl font-black text-morandi-tf">0 <span class="text-xs font-normal">片/盤</span></div>
+        <div class="text-[10px] text-gray-400 mt-1">樣本總處理量</div>
+      </div>
+    </div>
+
+    <!-- 歷史服務明細表格 -->
+    <div class="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden mb-10">
+      <div class="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between gap-3 bg-gray-50/50">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-list text-gray-500 text-sm"></i>
+          <span class="text-sm font-bold text-gray-700">歷史服務明細清單</span>
+          <span id="dash-record-count" class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-semibold">0 筆</span>
+        </div>
+        <div class="relative w-full md:w-72">
+          <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+          <input type="text" id="dash-search-input" oninput="handleSearchInput()" placeholder="搜尋..." class="pl-8 text-xs py-2 bg-white border border-gray-200 rounded-lg">
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-gray-600 border-collapse">
+          <thead class="bg-gray-100/70 text-gray-700 font-bold uppercase text-[11px] border-b border-gray-200">
+            <tr>
+              <th class="p-3">服務日期</th>
+              <th class="p-3">使用人 (PI)</th>
+              <th class="p-3">單位</th>
+              <th class="p-3">影像條件</th>
+              <th class="p-3" id="dash-th-wavelength">光源波長</th>
+              <th class="p-3 text-center">玻片數</th>
+              <th class="p-3 text-center">時數 (收/非)</th>
+              <th class="p-3 w-62">服務狀況</th>
+              <th class="p-3 text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="dash-table-body" class="divide-y divide-gray-100">
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head"><span class="eyebrow">STEP 3</span><h2>期刊當年度指標</h2></div>
-    <p class="card-desc">此區資料來自後台「Journals」分頁，依期刊全名自動比對帶入；如需更新請至 Google Sheet 手動修改，將自動同步至所有相同期刊之論文。</p>
-    <div id="journalInfoBox" class="journal-info-box">請先於上方選取或輸入期刊全名</div>
-  </div>
-
-  <div class="card">
-    <div class="card-head"><span class="eyebrow">STEP 4</span><h2>手動輸入資料</h2></div>
-    <div class="row cols-2">
-      <div class="field">
-        <label>作者類別 <span style="color:var(--red)">＊單選</span></label>
-        <div class="chip-group" id="grp_authorRole">
-          <button type="button" class="chip" data-val="通訊作者" onclick="selectChip(this,'authorRole')">通訊作者</button>
-          <button type="button" class="chip" data-val="第一作者" onclick="selectChip(this,'authorRole')">第一作者</button>
-          <button type="button" class="chip" data-val="共同作者" onclick="selectChip(this,'authorRole')">共同作者</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>分類 <span style="color:var(--red)">＊單選</span></label>
-        <div class="chip-group" id="grp_category">
-          <button type="button" class="chip" data-val="臨床" onclick="selectChip(this,'category')">臨床</button>
-          <button type="button" class="chip" data-val="基礎" onclick="selectChip(this,'category')">基礎</button>
-        </div>
-      </div>
-    </div>
-    <div class="row cols-2">
-      <div class="field">
-        <label>論文致謝情況 <span style="color:var(--purple)">複選</span></label>
-        <div class="chip-group" id="grp_ack">
-          <button type="button" class="chip ack" data-val="共同研究室" onclick="toggleAckChip(this)">共同研究室</button>
-          <button type="button" class="chip ack" data-val="國科會" onclick="toggleAckChip(this)">國科會</button>
-          <button type="button" class="chip ack" data-val="台大醫院" onclick="toggleAckChip(this)">台大醫院</button>
-          <button type="button" class="chip ack" data-val="李林計畫" onclick="toggleAckChip(this)">李林計畫</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>主題 <span style="color:var(--red)">＊單選</span></label>
-        <div class="chip-group" id="grp_topic">
-          <button type="button" class="chip" data-val="AKI" onclick="selectChip(this,'topic')">AKI</button>
-          <button type="button" class="chip" data-val="PA" onclick="selectChip(this,'topic')">PA</button>
-          <button type="button" class="chip" data-val="其他" onclick="selectChip(this,'topic')">其他</button>
-        </div>
-      </div>
-    </div>
-    <div class="row cols-2">
-      <div class="field"><label>圖書館編碼</label><input type="text" id="f_libraryCode"></div>
-    </div>
-
-    <div class="form-actions">
-      <button class="btn btn-ghost" onclick="clearForm()">清空表單</button>
-      <button class="btn btn-primary" id="saveBtn" onclick="savePaper()">💾 儲存至 Google Sheet</button>
-    </div>
-  </div>
 </div>
-
-<!-- ============ VIEW 2: 論文彙整 ============ -->
-<div id="view-dash" class="view">
-
-  <div class="card">
-    <div class="card-head" style="justify-content:space-between; display:flex;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="eyebrow">RECENT</span><h2>🕐 最近 24 小時內新增的資料</h2>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="loadRecent()">↻ 重新整理</button>
-    </div>
-    <p class="card-desc">顯示過去 24 小時內新增的論文（含直接於後台 Google Sheet 新增者），可直接點選「修正」更新內容。</p>
-    <div id="recentContainer"><div class="empty-state">載入中...</div></div>
-  </div>
-
-  <div class="card">
-    <div class="card-head"><span class="eyebrow">FILTER</span><h2>📋 彈性篩選 / 統計</h2></div>
-    <div class="filter-grid">
-      <div class="field"><label>年份（起）</label><input type="text" id="fl_yearFrom" placeholder="例如 2020"></div>
-      <div class="field"><label>年份（迄）</label><input type="text" id="fl_yearTo" placeholder="例如 2025"></div>
-      <div class="field"><label>IF（最小值）</label><input type="text" id="fl_ifMin" placeholder="例如 6"></div>
-      <div class="field"><label>IF（最大值）</label><input type="text" id="fl_ifMax"></div>
-      <div class="field"><label>作者類別</label>
-        <select id="fl_authorRole"><option>全部</option><option>通訊作者</option><option>第一作者</option><option>共同作者</option></select>
-      </div>
-      <div class="field"><label>引用次數（最小值）</label><input type="text" id="fl_citationMin" placeholder="例如 10"></div>
-    </div>
-    <div class="filter-grid">
-      <div class="field"><label>致謝情況</label>
-        <select id="fl_ack"><option>全部</option><option>共同研究室</option><option>國科會</option><option>台大醫院</option><option>李林計畫</option></select>
-      </div>
-      <div class="field"><label>主題</label>
-        <select id="fl_topic"><option>全部</option><option>AKI</option><option>PA</option><option>其他</option></select>
-      </div>
-      <div class="field"><label>分類</label>
-        <select id="fl_category"><option>全部</option><option>臨床</option><option>基礎</option></select>
-      </div>
-      <div class="field" style="grid-column:span 3;"><label>關鍵字（論文名稱／期刊／作者）</label><input type="text" id="fl_keyword" placeholder="輸入關鍵字後按「篩選檢視」"></div>
-    </div>
-    <div class="filter-actions">
-      <button class="btn btn-ghost" onclick="resetFilters()">重設篩選</button>
-      <button class="btn btn-primary" onclick="applyFilters()">篩選檢視</button>
-      <button class="btn btn-green" onclick="exportExcel()">⬇ 匯出 Excel</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-head" style="justify-content:space-between; display:flex;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="eyebrow">RESULT</span><h2>📄 篩選結果</h2>
-      </div>
-      <div class="result-count" id="resultCount">0 筆</div>
-    </div>
-    <div id="resultContainer"><div class="empty-state">請設定篩選條件並點選「篩選檢視」</div></div>
-  </div>
-</div>
-
 </main>
 
-<div class="toast" id="toast"></div>
+<!-- ===== 明細檢視 Modal（顯示所有參數） ===== -->
+<div id="detail-modal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="flex items-center gap-2">
+        <i class="fas fa-file-lines text-morandi-sidebar"></i>
+        <span class="font-bold text-gray-800 text-sm">服務紀錄完整明細</span>
+      </div>
+      <button onclick="closeModal('detail-modal')" class="icon-btn view"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="detail-modal-body"></div>
+    <div class="modal-footer">
+      <button onclick="closeModal('detail-modal')" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition">關閉</button>
+      <button id="detail-to-edit-btn" class="px-4 py-2 rounded-lg bg-morandi-sidebar text-white text-sm font-bold hover:opacity-90 transition flex items-center gap-2">
+        <i class="fas fa-pen"></i> 編輯此筆紀錄
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 編輯 Modal（同步更正 Google Sheet） ===== -->
+<div id="edit-modal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="flex items-center gap-2">
+        <i class="fas fa-pen-to-square text-morandi-sidebar"></i>
+        <span class="font-bold text-gray-800 text-sm">編輯服務紀錄</span>
+      </div>
+      <button onclick="closeModal('edit-modal')" class="icon-btn view"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="edit-modal-body"></div>
+    <div class="modal-footer">
+      <button onclick="closeModal('edit-modal')" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition">取消</button>
+      <button id="edit-save-btn" onclick="saveEdit()" class="px-4 py-2 rounded-lg bg-morandi-sidebar text-white text-sm font-bold hover:opacity-90 transition flex items-center gap-2">
+        <i class="fas fa-check"></i> 儲存並更新 Google Sheet
+      </button>
+    </div>
+  </div>
+</div>
 
 <script>
-/* ============================================================
- * 全域狀態
- * ============================================================ */
-let selectedCandidate = null;
-let editingId = null;         // 若非 null 表示目前為「修正」模式
-let currentFilterResults = [];
-let journalCache = {};        // journalFull(lower) -> {impactFactor, fieldName, fieldRank}
+let currentInstrument = 'TissueFAXS';
+let labData = { TissueFAXS: [], AxioObserver: [], LSM880: [] };
 
-const ACK_OPTIONS = ['共同研究室','國科會','台大醫院','李林計畫'];
+// 記錄目前彈窗檢視/編輯中的紀錄
+let activeDetailRecord = null;
 
-/* ============================================================
- * 共用：呼叫後端 (Promise 包裝)
- * ============================================================ */
-function callServer(fnName, ...args) {
-  return new Promise((resolve, reject) => {
-    google.script.run
-      .withSuccessHandler(resolve)
-      .withFailureHandler(err => reject(err))
-      [fnName](...args);
+// ==========================================
+// 各儀器獨立通道欄位設定
+// tf   : 波長/亮度/曝光/Threshold（4組，維持不變）
+// axio : 波長/亮度/曝光（無 Threshold，最多 5 組）
+// lsm  : 雷射波長/雷射強度/Gain/Pinhole（Threshold 改為 Pinhole，4組）
+// ==========================================
+const CHANNEL_CONFIG = {
+  tf:   { max: 4, fields: ['type','light','exp','thresh'],
+          labels: { type:'波長/螢光', light:'亮度(%)', exp:'曝光時間', thresh:'Threshold' } },
+  axio: { max: 5, fields: ['type','light','exp'],
+          labels: { type:'波長/螢光', light:'亮度(%)', exp:'曝光時間' } },
+  lsm:  { max: 4, fields: ['type','light','exp','pinhole'],
+          labels: { type:'雷射波長', light:'雷射強度(%)', exp:'Gain', pinhole:'Pinhole(AU)' } }
+};
+
+// 儀器代碼對照
+const INST_SHORT = { TissueFAXS: 'tf', AxioObserver: 'axio', LSM880: 'lsm' };
+
+// 各儀器可複選勾選項目設定（新增表單與編輯視窗共用，確保選項完全一致）
+const OPTIONS = {
+  tf: {
+    mag: ['10x','20x','40x'],
+    wavelength: ['mDAPI','mFITC','mTEXA','sDAPI','sGFP','sRho','sCy5']
+  },
+  axio: {
+    shootType: ['一般拍照','曠時攝影','大圖拼接','Z軸','環境控制'],
+    mag: ['10x','20x','40x','20x玻','40x玻','63x油'],
+    wavelength: ['PH1','PH2','DIC','DAPI','FITC','DsRED','A594','Cy5']
+  },
+  lsm: {
+    shootType: ['一般拍照','曠時攝影','大圖拼接','Z軸','環境控制'],
+    mag: ['5X','10X','20X','40X','63X','100X'],
+    wavelength: ['DIC','DAPI','FITC','RHO','CY5']
+  }
+};
+
+function pillGroupHTML(name, options, type) {
+  type = type || 'checkbox';
+  return options.map(v =>
+    `<label class="checkbox-pill"><input type="${type}" name="${name}" value="${v}"><span>${v}</span></label>`
+  ).join('');
+}
+
+// 依「服務日期」等欄位切分逗號字串成 tag 陣列（供編輯視窗還原勾選狀態使用）
+function checkPillValues(name, valuesStr) {
+  const values = splitTags(valuesStr);
+  document.querySelectorAll(`input[name="${name}"]`).forEach(inp => {
+    inp.checked = values.includes(inp.value);
   });
 }
 
-function showToast(msg, isError) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (isError ? ' err' : '');
-  setTimeout(() => { t.className = 'toast'; }, 3200);
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = (val === undefined || val === null) ? '' : val;
 }
 
-/* ============================================================
- * 頁面切換
- * ============================================================ */
-function switchView(name) {
-  document.getElementById('view-add').classList.toggle('active', name === 'add');
-  document.getElementById('view-dash').classList.toggle('active', name === 'dash');
-  document.getElementById('tabAddBtn').classList.toggle('active', name === 'add');
-  document.getElementById('tabDashBtn').classList.toggle('active', name === 'dash');
-  if (name === 'dash') { loadRecent(); }
+// 將「曠時:xxx | Z軸:xxx | 環境:xxx」格式的詳細條件字串還原成三個獨立欄位
+function parseDetailConditions(str) {
+  const result = { tl: '', zs: '', env: '' };
+  if (!str) return result;
+  str.toString().split('|').map(s => s.trim()).forEach(part => {
+    const m1 = part.match(/^曠時:(.*)$/);
+    const m2 = part.match(/^Z軸:(.*)$/);
+    const m3 = part.match(/^環境:(.*)$/);
+    if (m1) result.tl = m1[1];
+    if (m2) result.zs = m2[1];
+    if (m3) result.env = m3[1];
+  });
+  return result;
 }
 
-/* ============================================================
- * STEP1: PubMed 搜尋
- * ============================================================ */
-async function doSearch() {
-  const q = document.getElementById('searchQuery').value.trim();
-  if (!q) { showToast('請輸入論文名稱', true); return; }
-  const statusEl = document.getElementById('searchStatus');
-  statusEl.innerHTML = '<div class="loading-text"><span class="spinner-dark"></span>正在查詢 PubMed...</div>';
-  document.getElementById('candidateList').innerHTML = '';
+function toggleWavelengthVisibility(prefix, imageType) {
+  const el = document.getElementById(`${prefix}-wavelength-container`);
+  if (el) el.style.display = (imageType === '螢光') ? 'block' : 'none';
+}
+
+// 染色樣態現在是可複選的勾選組：只有「其他」被勾選時，才顯示旁邊的自訂輸入框
+function toggleStainingOther(domPrefix) {
+  const otherCheckbox = document.querySelector(`input[name="${domPrefix}-stainingType"][value="其他"]`);
+  const otherInput = document.getElementById(`${domPrefix}-staining-other`);
+  if (!otherCheckbox || !otherInput) return;
+  if (otherCheckbox.checked) {
+    otherInput.classList.remove('hidden');
+    otherInput.focus();
+  } else {
+    otherInput.classList.add('hidden');
+  }
+}
+
+// 讀取「染色樣態」目前勾選的所有值，組成逗號分隔字串：
+// 固定選項照勾選文字回傳；勾了「其他」則用旁邊文字框的內容取代（沒填就回傳「其他」）
+function getStainingTypesValue(domPrefix) {
+  const checked = Array.from(document.querySelectorAll(`input[name="${domPrefix}-stainingType"]:checked`)).map(el => el.value);
+  if (checked.length === 0) return '';
+  const otherInput = document.getElementById(`${domPrefix}-staining-other`);
+  const otherVal = (otherInput?.value || '').trim();
+  const finalValues = checked.map(v => v === '其他' ? (otherVal || '其他') : v);
+  return finalValues.join(', ');
+}
+
+// 依既有紀錄的「染色樣態」值（逗號分隔字串），還原多選勾選狀態：
+// 符合固定選項的就勾起來；不符合的（自訂文字）就勾「其他」並把值填回文字框
+function populateStainingTypes(domPrefix, value) {
+  const known = ['H&E', 'DAB', 'PAS', 'MTS'];
+  document.querySelectorAll(`input[name="${domPrefix}-stainingType"]`).forEach(cb => { cb.checked = false; });
+  const otherInput = document.getElementById(`${domPrefix}-staining-other`);
+  if (otherInput) otherInput.value = '';
+  toggleStainingOther(domPrefix); // 預設收起「其他」輸入框
+  if (!value) return;
+
+  const tokens = value.toString().split(',').map(s => s.trim()).filter(Boolean);
+  const otherTokens = [];
+  tokens.forEach(t => {
+    if (known.includes(t)) {
+      const cb = document.querySelector(`input[name="${domPrefix}-stainingType"][value="${t}"]`);
+      if (cb) cb.checked = true;
+    } else {
+      otherTokens.push(t);
+    }
+  });
+  if (otherTokens.length > 0) {
+    const otherCb = document.querySelector(`input[name="${domPrefix}-stainingType"][value="其他"]`);
+    if (otherCb) otherCb.checked = true;
+    if (otherInput) otherInput.value = otherTokens.join(', ');
+    toggleStainingOther(domPrefix);
+  }
+}
+
+// 編輯視窗專用：TissueFAXS 切換「螢光 / 可見光」時，同步顯示對應的參數區塊
+// （螢光→波長+通道參數；可見光→染色樣態+Condensor/燈源亮度/曝光時間），與新增表單行為一致
+function toggleTfSections(prefix, imageType) {
+  const isFluo = imageType === '螢光';
+  const flBlock = document.getElementById(`${prefix}-fl-params-block`);
+  const bfBlock = document.getElementById(`${prefix}-bf-params-block`);
+  const stainBlock = document.getElementById(`${prefix}-staining-container`);
+  if (flBlock) flBlock.style.display = isFluo ? 'block' : 'none';
+  if (bfBlock) bfBlock.classList.toggle('hidden', isFluo);
+  if (stainBlock) stainBlock.classList.toggle('hidden', isFluo);
+}
+
+// ==========================================
+// 編輯視窗：表單區塊產生器（結構與新增表單完全對應，
+// 勾選欄位維持勾選、鍵入欄位維持鍵入，避免資料錯亂）
+// ==========================================
+
+function basicInfoBlockHTML(p) {
+  return `
+    <div class="mb-5">
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><i class="fas fa-id-card"></i>客戶基本資料</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div><label class="form-label text-xs">服務日期</label><input type="date" id="${p}-date"></div>
+        <div><label class="form-label text-xs">單位</label><input type="text" id="${p}-unit"></div>
+        <div><label class="form-label text-xs">計畫主持人 (PI)</label><input type="text" id="${p}-pi"></div>
+        <div><label class="form-label text-xs">服務使用人</label><input type="text" id="${p}-user"></div>
+        <div class="sm:col-span-2"><label class="form-label text-xs">資料夾名稱</label><input type="text" id="${p}-folder"></div>
+      </div>
+    </div>`;
+}
+
+function hoursStatusBlockHTML(p) {
+  return `
+    <div class="mb-2">
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><i class="fas fa-clock"></i>服務時數與狀態</div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <div><label class="form-label text-xs">收費時數</label><input type="number" step="0.5" id="${p}-charged" min="0"></div>
+        <div><label class="form-label text-xs">非收費時數</label><input type="number" step="0.5" id="${p}-nonCharged" min="0"></div>
+        <div><label class="form-label text-xs">服務人次</label><input type="number" id="${p}-count" min="1"></div>
+      </div>
+      <div class="space-y-3">
+        <div><label class="form-label text-xs">服務狀況</label><textarea id="${p}-status" rows="2"></textarea></div>
+        <div><label class="form-label text-xs"><i class="fas fa-flask mr-1 text-gray-400"></i>研究內容</label><textarea rows="2" id="${p}-notes"></textarea></div>
+      </div>
+    </div>`;
+}
+
+function systemInfoBlockHTML(p) {
+  return `
+    <div class="mt-4 pt-3 border-t border-dashed border-gray-200">
+      <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5"><i class="fas fa-clock-rotate-left"></i>系統資訊（唯讀）</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div><label class="form-label text-[11px] text-gray-400">建立時間</label><input type="text" id="${p}-sys-created" disabled></div>
+        <div><label class="form-label text-[11px] text-gray-400">最後修改時間</label><input type="text" id="${p}-sys-modified" disabled placeholder="儲存後自動更新"></div>
+      </div>
+    </div>`;
+}
+
+function tfImageBlockHTML(p) {
+  return `
+    <div class="mb-5">
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><i class="fas fa-vial"></i>樣本與影像資訊</div>
+      <div class="mb-3">
+        <label class="form-label text-xs">影像類型</label>
+        <div class="flex gap-3">
+          <label class="checkbox-pill"><input type="radio" name="${p}-imageType" value="螢光" onchange="toggleTfSections('${p}', this.value)"><span><i class="fas fa-sun mr-1 text-xs"></i>螢光</span></label>
+          <label class="checkbox-pill"><input type="radio" name="${p}-imageType" value="可見光" onchange="toggleTfSections('${p}', this.value)"><span><i class="fas fa-lightbulb mr-1 text-xs"></i>可見光</span></label>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-xs">物鏡倍率</label>
+        <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-mag`, OPTIONS.tf.mag)}</div>
+      </div>
+
+      <div id="${p}-staining-container" class="hidden mb-3">
+        <label class="form-label text-xs">染色樣態</label>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="checkbox-pill"><input type="checkbox" name="${p}-stainingType" value="H&E" onchange="toggleStainingOther('${p}')"><span>H&E</span></label>
+          <label class="checkbox-pill"><input type="checkbox" name="${p}-stainingType" value="DAB" onchange="toggleStainingOther('${p}')"><span>DAB</span></label>
+          <label class="checkbox-pill"><input type="checkbox" name="${p}-stainingType" value="PAS" onchange="toggleStainingOther('${p}')"><span>PAS</span></label>
+          <label class="checkbox-pill"><input type="checkbox" name="${p}-stainingType" value="MTS" onchange="toggleStainingOther('${p}')"><span>MTS</span></label>
+          <label class="checkbox-pill"><input type="checkbox" name="${p}-stainingType" value="其他" onchange="toggleStainingOther('${p}')"><span>其他</span></label>
+          <input type="text" id="${p}-staining-other" class="hidden staining-other-input" placeholder="請輸入">
+        </div>
+      </div>
+
+      <div id="${p}-fl-params-block">
+        <div id="${p}-wavelength-container" class="mb-3">
+          <label class="form-label text-xs">光源波長</label>
+          <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-wavelength`, OPTIONS.tf.wavelength)}</div>
+        </div>
+        <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 mb-3">
+          <label class="text-[11px] font-bold text-gray-600 uppercase tracking-wide block mb-2">個別螢光參數</label>
+          <div id="${p}-channels-list" class="space-y-2"></div>
+          <button type="button" onclick="addFluoChannel('tf','${p}')" class="mt-2 text-xs px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition font-medium"><i class="fas fa-plus mr-1"></i>新增通道</button>
+        </div>
+      </div>
+
+      <div id="${p}-bf-params-block" class="hidden p-3 bg-gray-50 rounded-xl border border-gray-200 mb-3">
+        <label class="text-[11px] font-bold text-gray-600 uppercase tracking-wide block mb-2">可見光拍攝參數</label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label class="form-label text-xs">Condensor 數值</label><input type="text" id="${p}-bf-cond" placeholder="例: 0.55"></div>
+          <div><label class="form-label text-xs">燈源亮度 (%)</label><input type="text" id="${p}-bf-light" placeholder="例: 80%"></div>
+          <div><label class="form-label text-xs">曝光時間 (ms)</label><input type="text" id="${p}-bf-exp" placeholder="例: 15ms"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div><label class="form-label text-xs">樣本片數</label><input type="number" id="${p}-slides" min="0"></div>
+        <div><label class="form-label text-xs">其他備註</label><input type="text" id="${p}-staining"></div>
+      </div>
+    </div>`;
+}
+
+function axioImageBlockHTML(p) {
+  return `
+    <div class="mb-5">
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><i class="fas fa-vial"></i>樣本與影像資訊</div>
+      <div class="mb-3">
+        <label class="form-label text-xs">影像類型</label>
+        <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-shootType`, OPTIONS.axio.shootType)}</div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 p-2 bg-gray-50 rounded-lg text-xs">
+          <div><label class="form-label text-[11px]">曠時攝影 (總時間/區間)</label><input type="text" id="${p}-timelapse"></div>
+          <div><label class="form-label text-[11px]">Z軸 (層數/步距)</label><input type="text" id="${p}-zstack"></div>
+          <div><label class="form-label text-[11px]">環境控制 (溫度/加濕)</label><input type="text" id="${p}-env"></div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-xs">物鏡倍率</label>
+        <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-mag`, OPTIONS.axio.mag)}</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-xs">光源波長</label>
+        <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-wavelength`, OPTIONS.axio.wavelength)}</div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div><label class="form-label text-xs">樣本載體</label><input type="text" id="${p}-carrier"></div>
+        <div><label class="form-label text-xs">樣本內容</label><input type="text" id="${p}-content"></div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div><label class="form-label text-xs">樣本數</label><input type="number" id="${p}-slides" min="0"></div>
+        <div><label class="form-label text-xs">拍照位點數</label><input type="number" id="${p}-positions" min="0"></div>
+      </div>
+      <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 mb-3">
+        <label class="text-[11px] font-bold text-gray-600 uppercase tracking-wide block mb-2">個別光源參數</label>
+        <div id="${p}-channels-list" class="space-y-2"></div>
+        <button type="button" onclick="addFluoChannel('axio','${p}')" class="mt-2 text-xs px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition font-medium"><i class="fas fa-plus mr-1"></i>新增通道</button>
+      </div>
+      <div><label class="form-label text-xs">對焦策略</label><input type="text" id="${p}-focus"></div>
+    </div>`;
+}
+
+function lsmImageBlockHTML(p) {
+  return `
+    <div class="mb-5">
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><i class="fas fa-vial"></i>樣本與影像資訊</div>
+      <div class="mb-3">
+        <label class="form-label text-xs">影像類型</label>
+        <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-shootType`, OPTIONS.lsm.shootType)}</div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 p-2 bg-gray-50 rounded-lg text-xs">
+          <div><label class="form-label text-[11px]">曠時攝影 (總時間/區間)</label><input type="text" id="${p}-timelapse"></div>
+          <div><label class="form-label text-[11px]">Z軸 (層數/步距)</label><input type="text" id="${p}-zstack"></div>
+          <div><label class="form-label text-[11px]">環境控制 (溫度/加濕)</label><input type="text" id="${p}-env"></div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-xs">物鏡倍率</label>
+        <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-mag`, OPTIONS.lsm.mag)}</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-xs">雷射波長</label>
+        <div class="flex flex-wrap gap-2">${pillGroupHTML(`${p}-wavelength`, OPTIONS.lsm.wavelength)}</div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div><label class="form-label text-xs">樣本載體</label><input type="text" id="${p}-carrier"></div>
+        <div><label class="form-label text-xs">樣本內容</label><input type="text" id="${p}-content"></div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div><label class="form-label text-xs">樣本數</label><input type="number" id="${p}-slides" min="0"></div>
+        <div><label class="form-label text-xs">拍照位點數</label><input type="number" id="${p}-positions" min="0"></div>
+      </div>
+      <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 mb-3">
+        <label class="text-[11px] font-bold text-gray-600 uppercase tracking-wide block mb-2">掃描參數</label>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div><label class="form-label text-[11px]">Frame Size</label><input type="text" id="${p}-frameSize"></div>
+          <div><label class="form-label text-[11px]">Speed</label><input type="text" id="${p}-scanSpeed"></div>
+          <div><label class="form-label text-[11px]">Average Number</label><input type="text" id="${p}-avgNumber"></div>
+          <div><label class="form-label text-[11px]">Zoom</label><input type="text" id="${p}-zoom"></div>
+          <div><label class="form-label text-[11px]">Method</label>
+            <select id="${p}-method"><option value="">未指定</option><option value="Mean">Mean</option><option value="Sum">Sum</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 mb-3">
+        <label class="text-[11px] font-bold text-gray-600 uppercase tracking-wide block mb-2">獨立共軛焦通道參數</label>
+        <div id="${p}-channels-list" class="space-y-2"></div>
+        <button type="button" onclick="addFluoChannel('lsm','${p}')" class="mt-2 text-xs px-3 py-1 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition font-medium"><i class="fas fa-plus mr-1"></i>新增通道</button>
+      </div>
+    </div>`;
+}
+
+function buildEditFormHTML(instCode) {
+  const p = `edit-${instCode}`;
+  const middle = instCode === 'tf' ? tfImageBlockHTML(p)
+               : instCode === 'axio' ? axioImageBlockHTML(p)
+               : lsmImageBlockHTML(p);
+  return basicInfoBlockHTML(p) + middle + hoursStatusBlockHTML(p) + systemInfoBlockHTML(p);
+}
+
+function populateEditForm(instCode, record) {
+  const p = `edit-${instCode}`;
+  setVal(`${p}-date`, record['服務日期']);
+  setVal(`${p}-unit`, record['單位']);
+  setVal(`${p}-pi`, record['計畫主持人']);
+  setVal(`${p}-user`, record['服務使用人']);
+  setVal(`${p}-folder`, record['資料夾名稱']);
+
+  if (instCode === 'tf') {
+    const imgType = record['影像類型'] === '可見光' ? '可見光' : '螢光';
+    const radio = document.querySelector(`input[name="${p}-imageType"][value="${imgType}"]`);
+    if (radio) radio.checked = true;
+    toggleTfSections(p, imgType);
+    checkPillValues(`${p}-mag`, record['物鏡倍率']);
+    checkPillValues(`${p}-wavelength`, record['光源波長']);
+    populateStainingTypes(p, record['染色樣態']);
+    fillChannelsFromRecord('tf', p, record);
+    setVal(`${p}-bf-cond`, record['可見光_Condensor數值']);
+    setVal(`${p}-bf-light`, record['可見光_燈源亮度']);
+    setVal(`${p}-bf-exp`, record['可見光_曝光時間']);
+    setVal(`${p}-slides`, record['樣本片數']);
+    setVal(`${p}-staining`, record['染色樣態備註']);
+  } else if (instCode === 'axio') {
+    checkPillValues(`${p}-shootType`, record['影像類型']);
+    const cond = parseDetailConditions(record['詳細條件']);
+    setVal(`${p}-timelapse`, cond.tl);
+    setVal(`${p}-zstack`, cond.zs);
+    setVal(`${p}-env`, cond.env);
+    checkPillValues(`${p}-mag`, record['物鏡倍率']);
+    checkPillValues(`${p}-wavelength`, record['光源波長']);
+    setVal(`${p}-carrier`, record['樣本載體']);
+    setVal(`${p}-content`, record['樣本內容']);
+    setVal(`${p}-slides`, record['樣本數']);
+    setVal(`${p}-positions`, record['拍照位點數']);
+    fillChannelsFromRecord('axio', p, record);
+    setVal(`${p}-focus`, record['對焦策略']);
+  } else if (instCode === 'lsm') {
+    checkPillValues(`${p}-shootType`, record['影像類型']);
+    const cond = parseDetailConditions(record['詳細條件']);
+    setVal(`${p}-timelapse`, cond.tl);
+    setVal(`${p}-zstack`, cond.zs);
+    setVal(`${p}-env`, cond.env);
+    checkPillValues(`${p}-mag`, record['物鏡倍率']);
+    checkPillValues(`${p}-wavelength`, record['雷射波長']);
+    setVal(`${p}-carrier`, record['樣本載體']);
+    setVal(`${p}-content`, record['樣本內容']);
+    setVal(`${p}-slides`, record['樣本數']);
+    setVal(`${p}-positions`, record['拍照位點數']);
+    setVal(`${p}-frameSize`, record['Frame Size']);
+    setVal(`${p}-scanSpeed`, record['Scan Speed']);
+    setVal(`${p}-avgNumber`, record['Average Number']);
+    setVal(`${p}-zoom`, record['Zoom']);
+    setVal(`${p}-method`, record['Method']);
+    fillChannelsFromRecord('lsm', p, record);
+  }
+
+  setVal(`${p}-charged`, record['收費時數']);
+  setVal(`${p}-nonCharged`, record['非收費時數']);
+  setVal(`${p}-count`, record['服務人次']);
+  setVal(`${p}-status`, record['服務狀況']);
+  setVal(`${p}-notes`, record['研究內容']);
+  setVal(`${p}-sys-created`, record['建立時間']);
+  setVal(`${p}-sys-modified`, record['最後修改時間'] || '（尚未修改過）');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('input[type="date"]').forEach(inp => inp.value = today);
+
+  // 預設建立 2 組通道輸入列
+  addFluoChannel('tf'); addFluoChannel('tf');
+  addFluoChannel('axio'); addFluoChannel('axio');
+  addFluoChannel('lsm'); addFluoChannel('lsm');
+
+  // 防止在輸入欄位按 Enter 鍵誤觸表單送出（僅允許按下方按鈕才會送出）
+  ['form-tf', 'form-axio', 'form-lsm'].forEach(id => {
+    const form = document.getElementById(id);
+    form.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    });
+  });
+
+  // 一開始不主動載入任何後台資料，等使用者實際切換到某台儀器的「後台彙整」頁籤時，
+  // 才會依儀器分開請求資料（見 switchView），減少不必要的讀取與等待時間。
+});
+
+function switchView(instCode, viewType) {
+  if (instCode === 'tf') currentInstrument = 'TissueFAXS';
+  if (instCode === 'axio') currentInstrument = 'AxioObserver';
+  if (instCode === 'lsm') currentInstrument = 'LSM880';
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
+  const activeBtn = document.getElementById(`nav-${instCode}-${viewType}`);
+  if (activeBtn) activeBtn.classList.add('nav-active');
+
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  if (viewType === 'form') {
+    document.getElementById(`view-${instCode}-form`).classList.add('active');
+  } else {
+    document.getElementById('view-dashboard').classList.add('active');
+    updateDashboardHeader();
+    if (!instrumentLoaded[currentInstrument]) {
+      // 這台儀器在本次瀏覽階段還沒讀過資料，去後端拿（優先命中 GAS 端快取，速度較快）
+      loadInstrumentData(currentInstrument, false);
+    } else {
+      // 已經讀過，直接用記憶體中的資料重新渲染，不用再打一次 API
+      populateYearFilter();
+      renderCurrentDashboard();
+    }
+  }
+}
+
+function toggleTfImageType(type) {
+  const isFluo = type === '螢光';
+  document.getElementById('tf-wavelength-container').style.display = isFluo ? 'block' : 'none';
+  document.getElementById('tf-fl-params-block').style.display = isFluo ? 'block' : 'none';
+  document.getElementById('tf-bf-params-block').style.display = isFluo ? 'none' : 'block';
+  document.getElementById('tf-staining-container').style.display = isFluo ? 'none' : 'block';
+}
+
+// 動態增加獨立通道（欄位內容依 CHANNEL_CONFIG[instCode] 而定）
+// domPrefix：實際 DOM id 前綴，預設等於 instCode；編輯視窗會用 'edit-tf' 等前綴避免 id 衝突
+function addFluoChannel(instCode, domPrefix) {
+  domPrefix = domPrefix || instCode;
+  const config = CHANNEL_CONFIG[instCode];
+  const container = document.getElementById(`${domPrefix}-channels-list`);
+  const currentCount = container.querySelectorAll('.channel-row').length;
+  if (currentCount >= config.max) {
+    showToast(`最多僅支援新增 ${config.max} 組通道！`, 'info');
+    return;
+  }
+
+  const chIndex = currentCount + 1;
+  const div = document.createElement('div');
+  div.className = "channel-row flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 text-xs";
+
+  const inputs = config.fields.map(f =>
+    `<input type="text" placeholder="${config.labels[f]}" class="w-1/4 p-1 border rounded channel-${f}">`
+  ).join('');
+
+  div.innerHTML = `
+    <span class="font-bold text-gray-500 w-8 text-center flex-shrink-0">Ch${chIndex}</span>
+    ${inputs}
+    <button type="button" onclick="removeChannelRow(this, '${domPrefix}')" class="text-red-400 hover:text-red-600 px-1"><i class="fas fa-trash-alt"></i></button>
+  `;
+  container.appendChild(div);
+}
+
+function removeChannelRow(btn, domPrefix) {
+  btn.parentElement.remove();
+  // 重新計算 Channel 標號
+  const container = document.getElementById(`${domPrefix}-channels-list`);
+  const rows = container.querySelectorAll('.channel-row');
+  rows.forEach((r, idx) => {
+    r.querySelector('span').innerText = `Ch${idx + 1}`;
+  });
+}
+
+function getCheckedValues(name) {
+  const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// 收集獨立通道物件資料（依 CHANNEL_CONFIG[instCode].fields 動態組成 key）
+function collectChannelsArray(instCode, domPrefix) {
+  domPrefix = domPrefix || instCode;
+  const config = CHANNEL_CONFIG[instCode];
+  const container = document.getElementById(`${domPrefix}-channels-list`);
+  const rows = container.querySelectorAll('.channel-row');
+  const channels = [];
+
+  rows.forEach(r => {
+    const ch = {};
+    let hasValue = false;
+    config.fields.forEach(f => {
+      const val = r.querySelector(`.channel-${f}`)?.value || '';
+      ch[f] = val;
+      if (val) hasValue = true;
+    });
+    if (hasValue) channels.push(ch);
+  });
+  return channels;
+}
+
+// 依 record 中的 Ch{n}_xxx 欄位，把值填回編輯表單的通道列（維持與前台一致的輸入框）
+function fillChannelsFromRecord(instCode, domPrefix, record) {
+  const config = CHANNEL_CONFIG[instCode];
+  // Ch 欄位標題後綴對照：type→波長, light→亮度, exp→曝光/Gain, thresh→Threshold, pinhole→Pinhole
+  const headerSuffix = {
+    type: '波長', light: '亮度',
+    exp: (instCode === 'lsm') ? 'Gain' : '曝光',
+    thresh: 'Threshold', pinhole: 'Pinhole'
+  };
+
+  for (let i = 1; i <= config.max; i++) {
+    const hasAny = config.fields.some(f => {
+      const key = `Ch${i}_${headerSuffix[f]}`;
+      return record[key] !== undefined && record[key] !== '';
+    });
+    if (!hasAny) continue;
+
+    addFluoChannel(instCode, domPrefix);
+    const container = document.getElementById(`${domPrefix}-channels-list`);
+    const row = container.querySelectorAll('.channel-row')[i - 1];
+    if (!row) continue;
+    config.fields.forEach(f => {
+      const key = `Ch${i}_${headerSuffix[f]}`;
+      const input = row.querySelector(`.channel-${f}`);
+      if (input && record[key] !== undefined) input.value = record[key];
+    });
+  }
+}
+
+// ==========================================
+// Toast 通知（取代原本的 alert()）
+// ==========================================
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const icons = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span>`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.3s';
+    setTimeout(() => el.remove(), 300);
+  }, 3200);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ==========================================
+// API 通訊：讀取與寫入 Google Sheets
+// ==========================================
+
+// 各儀器是否已在本次瀏覽階段載入過資料（切換頁籤時用來判斷要不要重新打 API）
+let instrumentLoaded = { TissueFAXS: false, AxioObserver: false, LSM880: false };
+
+// 讀取「單一儀器」的資料（對應優化建議 4：依儀器分開讀取，切換頁籤才請求該儀器資料）
+// forceRefresh = true 時會加上 nocache=1，繞過後端 GAS 快取，強制重新讀取試算表最新內容
+async function loadInstrumentData(instName, forceRefresh) {
+  const syncIcon = document.getElementById('sync-icon');
+  const syncTime = document.getElementById('sync-time');
+  if (syncIcon) syncIcon.classList.add('fa-spin');
+
+  if (GAS_API_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
+    if (syncIcon) syncIcon.classList.remove('fa-spin');
+    syncTime.innerText = "請設定 GAS URL";
+    return;
+  }
+
   try {
-    const results = await callServer('searchPubMedCandidates', q);
-    statusEl.innerHTML = '';
-    if (!results.length) {
-      statusEl.innerHTML = '<div class="banner warn">查無相符論文，請確認標題是否正確，或改用手動輸入。</div>';
+    const url = `${GAS_API_URL}?instrument=${encodeURIComponent(instName)}${forceRefresh ? '&nocache=1' : ''}`;
+    const res = await fetch(url);
+    const result = await res.json();
+    if (result.status === 'success') {
+      labData[instName] = (result.data && result.data[instName]) || [];
+      instrumentLoaded[instName] = true;
+      const now = new Date().toLocaleTimeString();
+      syncTime.innerText = `已同步: ${now}`;
+      if (forceRefresh) showToast('資料已重新整理！', 'success');
+      if (currentInstrument === instName) {
+        populateYearFilter();
+        renderCurrentDashboard();
+      }
+    } else {
+      showToast('讀取失敗：' + (result.message || '未知錯誤'), 'error');
+    }
+  } catch (err) {
+    console.error("Fetch error:", err);
+    syncTime.innerText = "同步失敗";
+    showToast('讀取失敗，請檢查連線！', 'error');
+  } finally {
+    if (syncIcon) syncIcon.classList.remove('fa-spin');
+  }
+}
+
+// 側邊欄「重新載入 / 同步試算表」按鈕：強制重新整理「目前所在儀器」的資料
+function manualSync() {
+  loadInstrumentData(currentInstrument, true);
+}
+
+// 依目前表單內容組成 payload.data（新增用）
+// instName: 'TissueFAXS' / 'AxioObserver' / 'LSM880'
+// domPrefix: 實際輸入框 id 的前綴。新增表單預設為 'tf'/'axio'/'lsm'；
+//            編輯視窗會傳入 'edit-tf'/'edit-axio'/'edit-lsm'，確保兩邊欄位型態完全一致
+//            （勾選維持勾選、鍵入維持鍵入），避免資料錯亂。
+function buildPayloadData(instName, domPrefix) {
+  if (instName === 'TissueFAXS') {
+    const p = domPrefix || 'tf';
+    return {
+      date: document.getElementById(`${p}-date`).value,
+      unit: document.getElementById(`${p}-unit`).value,
+      pi: document.getElementById(`${p}-pi`).value,
+      user: document.getElementById(`${p}-user`).value,
+      folder: document.getElementById(`${p}-folder`).value,
+      imageType: document.querySelector(`input[name="${p}-imageType"]:checked`).value,
+      mag: getCheckedValues(`${p}-mag`),
+      wavelength: getCheckedValues(`${p}-wavelength`),
+      stainingType: getStainingTypesValue(p),
+      staining: document.getElementById(`${p}-staining`).value,
+      channels: collectChannelsArray('tf', p),
+      bfCondensor: document.getElementById(`${p}-bf-cond`)?.value || '',
+      bfLight: document.getElementById(`${p}-bf-light`)?.value || '',
+      bfExp: document.getElementById(`${p}-bf-exp`)?.value || '',
+      slides: document.getElementById(`${p}-slides`).value,
+      chargedHours: document.getElementById(`${p}-charged`).value,
+      nonChargedHours: document.getElementById(`${p}-nonCharged`).value,
+      serviceCount: document.getElementById(`${p}-count`).value,
+      status: document.getElementById(`${p}-status`).value,
+      notes: document.getElementById(`${p}-notes`).value
+    };
+  } else if (instName === 'AxioObserver') {
+    const p = domPrefix || 'axio';
+    const tl = document.getElementById(`${p}-timelapse`).value;
+    const zs = document.getElementById(`${p}-zstack`).value;
+    const env = document.getElementById(`${p}-env`).value;
+    const condList = [];
+    if (tl) condList.push(`曠時:${tl}`);
+    if (zs) condList.push(`Z軸:${zs}`);
+    if (env) condList.push(`環境:${env}`);
+
+    return {
+      date: document.getElementById(`${p}-date`).value,
+      unit: document.getElementById(`${p}-unit`).value,
+      pi: document.getElementById(`${p}-pi`).value,
+      user: document.getElementById(`${p}-user`).value,
+      folder: document.getElementById(`${p}-folder`).value,
+      shootType: getCheckedValues(`${p}-shootType`),
+      detailConditions: condList.join(' | '),
+      mag: getCheckedValues(`${p}-mag`),
+      wavelength: getCheckedValues(`${p}-wavelength`),
+      carrier: document.getElementById(`${p}-carrier`).value,
+      sampleContent: document.getElementById(`${p}-content`).value,
+      slides: document.getElementById(`${p}-slides`).value,
+      positions: document.getElementById(`${p}-positions`).value,
+      channels: collectChannelsArray('axio', p),
+      focus: document.getElementById(`${p}-focus`).value,
+      chargedHours: document.getElementById(`${p}-charged`).value,
+      nonChargedHours: document.getElementById(`${p}-nonCharged`).value,
+      serviceCount: document.getElementById(`${p}-count`).value,
+      status: document.getElementById(`${p}-status`).value,
+      notes: document.getElementById(`${p}-notes`).value
+    };
+  } else if (instName === 'LSM880') {
+    const p = domPrefix || 'lsm';
+    const tl = document.getElementById(`${p}-timelapse`).value;
+    const zs = document.getElementById(`${p}-zstack`).value;
+    const env = document.getElementById(`${p}-env`).value;
+    const condList = [];
+    if (tl) condList.push(`曠時:${tl}`);
+    if (zs) condList.push(`Z軸:${zs}`);
+    if (env) condList.push(`環境:${env}`);
+
+    return {
+      date: document.getElementById(`${p}-date`).value,
+      unit: document.getElementById(`${p}-unit`).value,
+      pi: document.getElementById(`${p}-pi`).value,
+      user: document.getElementById(`${p}-user`).value,
+      folder: document.getElementById(`${p}-folder`).value,
+      shootType: getCheckedValues(`${p}-shootType`),
+      detailConditions: condList.join(' | '),
+      mag: getCheckedValues(`${p}-mag`),
+      wavelength: getCheckedValues(`${p}-wavelength`),
+      carrier: document.getElementById(`${p}-carrier`).value,
+      sampleContent: document.getElementById(`${p}-content`).value,
+      slides: document.getElementById(`${p}-slides`).value,
+      positions: document.getElementById(`${p}-positions`).value,
+      frameSize: document.getElementById(`${p}-frameSize`).value,
+      scanSpeed: document.getElementById(`${p}-scanSpeed`).value,
+      avgNumber: document.getElementById(`${p}-avgNumber`).value,
+      zoom: document.getElementById(`${p}-zoom`).value,
+      method: document.getElementById(`${p}-method`).value,
+      channels: collectChannelsArray('lsm', p),
+      chargedHours: document.getElementById(`${p}-charged`).value,
+      nonChargedHours: document.getElementById(`${p}-nonCharged`).value,
+      serviceCount: document.getElementById(`${p}-count`).value,
+      status: document.getElementById(`${p}-status`).value,
+      notes: document.getElementById(`${p}-notes`).value
+    };
+  }
+}
+
+async function handleFormSubmit(event, instName) {
+  event.preventDefault();
+
+  if (GAS_API_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
+    showToast('請先設定 Google Apps Script URL！', 'error');
+    return;
+  }
+
+  const submitBtn = event.target.querySelector('button[type="submit"]');
+  const originText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 資料傳輸中...`;
+
+  // 重要：組資料 (buildPayloadData) 和送出 (fetch) 全部包在同一個 try 裡面。
+  // 這樣不管是「欄位讀取失敗」還是「網路/後端錯誤」，都保證會走到 finally 把按鈕解鎖，
+  // 不會再發生按鈕卡在「資料傳輸中...」動彈不得、卻沒有任何錯誤提示的情況。
+  try {
+    const payload = { instrument: instName, action: 'insert', data: buildPayloadData(instName) };
+
+    // 不使用 mode:"no-cors"，改用 Content-Type: text/plain 避免觸發預檢請求(preflight)，
+    // 這樣才讀得到 Google Apps Script 真正回傳的執行結果，而不是永遠假裝成功。
+    const res = await fetch(GAS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (result.status !== 'success') {
+      throw new Error(result.message || '後端回傳未知錯誤');
+    }
+
+    showToast('服務紀錄已成功儲存至 Google 試算表！', 'success');
+    event.target.reset();
+    document.querySelectorAll(`#${event.target.id} input[type="date"]`).forEach(inp => {
+      inp.value = new Date().toISOString().split('T')[0];
+    });
+    // 新增成功後，標記該儀器的資料為「未載入」，下次切換到它的後台頁籤時會自動重新抓取最新資料
+    // （後端也已經在寫入成功時清除了該儀器的快取，所以下次讀取一定拿得到這筆新資料）
+    instrumentLoaded[instName] = false;
+  } catch (err) {
+    showToast('儲存失敗：' + err.message, 'error');
+    console.error(err);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originText;
+  }
+}
+
+// ==========================================
+// 後台彙整與即時統計渲染
+// ==========================================
+
+function updateDashboardHeader() {
+  const titles = {
+    TissueFAXS: { title: "全景組織細胞 (TissueFAXS)", sub: "全景掃描與螢光定量明細" },
+    AxioObserver: { title: "電動倒立螢光 (Axio Observer 7)", sub: "活細胞與多維影像紀錄" },
+    LSM880: { title: "倒立共軛焦 (ZEISS LSM880)", sub: "高解析共軛焦與光切片明細" }
+  };
+  document.getElementById('dash-inst-title').innerText = titles[currentInstrument].title;
+  document.getElementById('dash-inst-subtitle').innerText = titles[currentInstrument].sub;
+
+  // 表格「光源波長」欄位標題：TissueFAXS 同時涵蓋螢光波長與可見光染色樣態，
+  // LSM880 用雷射波長，其餘用光源波長
+  const thWavelength = document.getElementById('dash-th-wavelength');
+  if (thWavelength) {
+    if (currentInstrument === 'TissueFAXS') {
+      thWavelength.textContent = '光源波長／染色樣態';
+    } else if (currentInstrument === 'LSM880') {
+      thWavelength.textContent = '雷射波長';
+    } else {
+      thWavelength.textContent = '光源波長';
+    }
+  }
+}
+
+// 記錄每台儀器的年份篩選是否已經設定過預設值，避免使用者手動選了「全部年份」之後，
+// 下次切換頁籤又被強制跳回今年
+let yearFilterInitialized = { TissueFAXS: false, AxioObserver: false, LSM880: false };
+
+function populateYearFilter() {
+  const rows = labData[currentInstrument] || [];
+  const years = new Set();
+  rows.forEach(r => {
+    const d = r['服務日期'] || r['建立時間'] || '';
+    const match = d.toString().match(/^(\d{4})/);
+    if (match) years.add(match[1]);
+  });
+
+  const select = document.getElementById('dash-year-filter');
+  const currentVal = select.value;
+  select.innerHTML = '<option value="ALL">全部年份 (歷年總計)</option>';
+  Array.from(years).sort().reverse().forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.innerText = `${y} 年`;
+    select.appendChild(opt);
+  });
+
+  const thisYear = new Date().getFullYear().toString();
+
+  if (!yearFilterInitialized[currentInstrument]) {
+    // 第一次瀏覽這台儀器的後台：優化建議 2 — 預設只顯示「今年」，減少一次要處理/渲染的資料量
+    if (years.has(thisYear)) {
+      select.value = thisYear;
+    }
+    yearFilterInitialized[currentInstrument] = true;
+  } else if (Array.from(years).includes(currentVal)) {
+    // 之後再次切換回來：尊重使用者原本選擇的年份
+    select.value = currentVal;
+  }
+}
+
+// 搜尋框有輸入內容時，自動把年份篩選切到「全部年份」，確保跨年度也搜得到
+// （避免使用者忘記手動切換年份，導致其他年度的資料被年份篩選擋掉而顯示「找不到」）
+function handleSearchInput() {
+  const keyword = document.getElementById('dash-search-input').value.trim();
+  const yearSelect = document.getElementById('dash-year-filter');
+  if (keyword && yearSelect.value !== 'ALL') {
+    yearSelect.value = 'ALL';
+  }
+  renderCurrentDashboard();
+}
+
+function renderCurrentDashboard() {
+  const rawData = labData[currentInstrument] || [];
+  const selectedYear = document.getElementById('dash-year-filter').value;
+  const keyword = document.getElementById('dash-search-input').value.trim().toLowerCase();
+
+  const filtered = rawData.filter(item => {
+    const dateStr = (item['服務日期'] || '').toString();
+    const matchYear = (selectedYear === 'ALL') || dateStr.startsWith(selectedYear);
+
+    if (!matchYear) return false;
+    if (!keyword) return true;
+
+    const user = (item['服務使用人'] || '').toString().toLowerCase();
+    const pi = (item['計畫主持人'] || '').toString().toLowerCase();
+    const unit = (item['單位'] || '').toString().toLowerCase();
+    const folder = (item['資料夾名稱'] || '').toString().toLowerCase();
+    return user.includes(keyword) || pi.includes(keyword) || unit.includes(keyword) || folder.includes(keyword);
+  });
+
+  let totalCount = filtered.length;
+  let totalCharged = 0;
+  let totalNonCharged = 0;
+  let totalSlides = 0;
+
+  filtered.forEach(r => {
+    totalCharged += parseFloat(r['收費時數'] || 0) || 0;
+    totalNonCharged += parseFloat(r['非收費時數'] || 0) || 0;
+    totalSlides += parseFloat(r['樣本片數'] || r['樣本數'] || 0) || 0;
+  });
+
+  document.getElementById('stat-total-count').innerText = totalCount;
+  document.getElementById('stat-charged-hours').innerHTML = `${totalCharged.toFixed(1)} <span class="text-xs font-normal">hr</span>`;
+  document.getElementById('stat-noncharged-hours').innerHTML = `${totalNonCharged.toFixed(1)} <span class="text-xs font-normal">hr</span>`;
+  document.getElementById('stat-total-slides').innerHTML = `${totalSlides} <span class="text-xs font-normal">片/盤</span>`;
+  document.getElementById('dash-record-count').innerText = `${filtered.length} 筆`;
+
+  const tbody = document.getElementById('dash-table-body');
+  tbody.innerHTML = '';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="p-10 text-center text-gray-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>尚無符合條件的服務紀錄</td></tr>`;
+    return;
+  }
+
+const sorted = [...filtered].sort((a, b) => {
+    const dateA = new Date(a['服務日期'] || 0);
+    const dateB = new Date(b['服務日期'] || 0);
+    return dateB - dateA; // 新到舊（降冪）
+  });
+  
+  sorted.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-gray-50/80 transition detail-row";
+
+    const date = r['服務日期'] || '-';
+    const user = r['服務使用人'] || '-';
+    const pi = r['計畫主持人'] || '-';
+    const unit = r['單位'] || '-';
+
+    const slides = r['樣本片數'] || r['樣本數'] || 0;
+    const charged = r['收費時數'] || 0;
+    const nonCharged = r['非收費時數'] || 0;
+    const status = r['服務狀況'] || '正常';
+
+    tr.innerHTML = `
+      <td class="p-3 font-medium text-gray-800 whitespace-nowrap">${date}</td>
+      <td class="p-3 whitespace-nowrap"><span class="font-bold text-gray-700">${user}</span> <span class="text-gray-400 text-[11px]">(${pi})</span></td>
+      <td class="p-3 text-gray-500 whitespace-nowrap">${unit}</td>
+      <td class="p-3"><div class="flex flex-wrap max-w-[15rem]">${renderTypeBadges(r['影像類型'])}${renderMagBadges(r['物鏡倍率'])}</div></td>
+      <td class="p-3"><div class="flex flex-wrap items-center max-w-[13rem]">${renderWavelengthOrStaining(r)}</div></td>
+      <td class="p-3 text-center font-bold text-gray-700">${slides}</td>
+      <td class="p-3 text-center whitespace-nowrap"><span class="text-green-700 font-semibold">${charged}h</span> / <span class="text-gray-400">${nonCharged}h</span></td>
+      <td class="p-3"><span class="inline-block max-w-[18rem] px-2 py-0.5 rounded-md text-[11px] bg-gray-100 text-gray-600 border border-gray-200 whitespace-normal break-words align-top" title="${status}">${status}</span></td>
+      <td class="p-3 text-center whitespace-nowrap">
+        <button class="icon-btn view" title="查看完整明細" onclick="openDetailModal(${r._rowId})"><i class="fas fa-eye"></i></button>
+        <button class="icon-btn edit" title="編輯" onclick="openEditModal(${r._rowId})"><i class="fas fa-pen"></i></button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ==========================================
+// 徽章渲染輔助函式（影像條件 / 光源波長，以活潑的塊狀 ICON 呈現）
+// ==========================================
+const TYPE_BADGE_MAP = {
+  '螢光':    { icon: 'fa-sun',                cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  '可見光':  { icon: 'fa-lightbulb',          cls: 'bg-gray-50 text-gray-600 border-gray-200' },
+  '一般拍照': { icon: 'fa-camera',             cls: 'bg-slate-50 text-slate-600 border-slate-200' },
+  '曠時攝影': { icon: 'fa-clock-rotate-left',  cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+  '大圖拼接': { icon: 'fa-images',             cls: 'bg-teal-50 text-teal-600 border-teal-200' },
+  'Z軸':     { icon: 'fa-layer-group',        cls: 'bg-purple-50 text-purple-600 border-purple-200' },
+  '環境控制': { icon: 'fa-temperature-half',   cls: 'bg-rose-50 text-rose-600 border-rose-200' }
+};
+
+function splitTags(str) {
+  return (str || '').toString().split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function renderTypeBadges(str) {
+  const tags = splitTags(str);
+  if (tags.length === 0) return '<span class="text-gray-300 text-xs">—</span>';
+  return tags.map(s => {
+    const m = TYPE_BADGE_MAP[s] || { icon: 'fa-circle-dot', cls: 'bg-gray-50 text-gray-500 border-gray-200' };
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${m.cls} mr-1 mb-1"><i class="fas ${m.icon}"></i>${s}</span>`;
+  }).join('');
+}
+
+function renderMagBadges(str) {
+  const tags = splitTags(str);
+  return tags.map(s =>
+    `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-100 text-gray-500 border border-gray-200 mr-1 mb-1">${s}</span>`
+  ).join('');
+}
+
+function wavelengthColorClass(tag) {
+  const t = tag.toUpperCase();
+  if (t.includes('DAPI')) return 'bg-blue-50 text-blue-700 border-blue-200';
+  if (t.includes('FITC') || t.includes('GFP')) return 'bg-green-50 text-green-700 border-green-200';
+  if (t.includes('CY5')) return 'bg-red-50 text-red-700 border-red-200';
+  if (t.includes('RHO') || t.includes('DSRED') || t.includes('A594') || t.includes('TEXA')) return 'bg-orange-50 text-orange-700 border-orange-200';
+  if (t.includes('DIC') || t.includes('PH')) return 'bg-slate-50 text-slate-600 border-slate-200';
+  return 'bg-gray-50 text-gray-600 border-gray-200';
+}
+
+function renderWavelengthBadges(str) {
+  const tags = splitTags(str);
+  if (tags.length === 0) return '<span class="text-gray-300 text-xs">—</span>';
+  return tags.map(s =>
+    `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${wavelengthColorClass(s)} mr-1 mb-1"><i class="fas fa-wave-square"></i>${s}</span>`
+  ).join('');
+}
+
+// 歷史明細清單「光源波長」欄：TissueFAXS 的可見光紀錄沒有波長可顯示，
+// 改顯示「染色樣態」徽章（跟其他徽章同一種視覺語言，只是換一個低飽和的色調），
+// 避免可見光那幾列這一欄永遠空著。其餘情況維持顯示波長徽章。
+function renderWavelengthOrStaining(r) {
+  if (currentInstrument === 'TissueFAXS' && r['影像類型'] === '可見光') {
+    const staining = (r['染色樣態'] || '').toString().trim();
+    if (!staining) return '<span class="text-gray-300 text-xs">—</span>';
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-stone-100 text-stone-600 border-stone-300"><i class="fas fa-droplet"></i>${staining}</span>`;
+  }
+  const wavelengthHeader = currentInstrument === 'LSM880' ? '雷射波長' : '光源波長';
+  return renderWavelengthBadges(r[wavelengthHeader]);
+}
+
+// ==========================================
+// 明細檢視 / 編輯（點選展開，全部參數皆可查詢與修正）
+// ==========================================
+
+function findRecord(rowId) {
+  const rows = labData[currentInstrument] || [];
+  return rows.find(r => r._rowId === rowId);
+}
+
+// 把單筆紀錄依「客戶基本資料 / 樣本與影像資訊 / 通道參數 / 可見光拍攝參數 /
+// 服務時數與狀態 / 研究內容 / 系統資訊」分成區塊，供「查看完整明細」用區塊卡片方式呈現
+// （取代逐列條列，數據不減少）。
+// TissueFAXS 會依該筆紀錄實際的「影像類型」（螢光 / 可見光）只顯示真正適用的欄位，
+// 避免螢光專屬（光源波長、通道參數）跟可見光專屬（Condensor/燈源亮度/曝光時間）混在一起顯示。
+function groupRecordFields(record) {
+  const baseKeys = ['服務日期', '單位', '計畫主持人', '服務使用人', '資料夾名稱'];
+  const statusKeys = ['樣本片數', '樣本數', '拍照位點數', '對焦策略', '收費時數', '非收費時數', '服務人次', '服務狀況'];
+  const noteKeys = ['研究內容'];
+  const sysKeys = ['建立時間', '最後修改時間'];
+  const bfKeys = ['染色樣態', '可見光_Condensor數值', '可見光_燈源亮度', '可見光_曝光時間'];
+  const flOnlyKeys = ['光源波長']; // TissueFAXS 專屬：只有螢光模式才適用
+
+  const isTF = currentInstrument === 'TissueFAXS';
+  const isBrightfield = isTF && record['影像類型'] === '可見光';
+
+  const groups = { base: [], image: [], channels: {}, bf: [], status: [], note: [], sys: [] };
+
+  Object.entries(record).forEach(([k, v]) => {
+    if (k === '_rowId') return;
+
+    if (isTF) {
+      if (bfKeys.includes(k)) {
+        if (isBrightfield) groups.bf.push({ label: k, value: v });
+        return; // 螢光模式：完全不顯示可見光專屬欄位，避免混雜
+      }
+      if (isBrightfield && flOnlyKeys.includes(k)) {
+        return; // 可見光模式：不顯示螢光專屬的光源波長欄位
+      }
+    }
+
+    const chMatch = k.match(/^Ch(\d+)_(.+)$/);
+    if (chMatch) {
+      if (isBrightfield) return; // 可見光模式沒有通道參數，略過
+      const n = chMatch[1];
+      if (!groups.channels[n]) groups.channels[n] = [];
+      groups.channels[n].push({ label: chMatch[2], value: v });
       return;
     }
-    renderCandidates(results);
-  } catch (e) {
-    statusEl.innerHTML = '<div class="banner warn">查詢失敗：' + e.message + '</div>';
-  }
-}
-
-function renderCandidates(results) {
-  const wrap = document.getElementById('candidateList');
-  wrap.innerHTML = '';
-  results.forEach(r => {
-    const div = document.createElement('div');
-    div.className = 'candidate';
-    div.innerHTML = `<div class="c-title">${escapeHtml(r.title)}</div>
-      <div class="c-meta">${escapeHtml(r.journalAbbr)} · ${escapeHtml(r.pubYear)} · ${escapeHtml(r.authorsShort)} · PMID ${r.pmid}</div>`;
-    div.onclick = () => selectCandidate(r.pmid, div);
-    wrap.appendChild(div);
+    if (baseKeys.includes(k)) { groups.base.push({ label: k, value: v }); return; }
+    if (statusKeys.includes(k)) { groups.status.push({ label: k, value: v }); return; }
+    if (noteKeys.includes(k)) { groups.note.push({ label: k, value: v }); return; }
+    if (sysKeys.includes(k)) { groups.sys.push({ label: k, value: v }); return; }
+    groups.image.push({ label: k, value: v });
   });
+  return groups;
 }
 
-async function selectCandidate(pmid, el) {
-  document.querySelectorAll('.candidate').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  showToast('正在自 PubMed 取得完整資料...');
-  try {
-    const detail = await callServer('getPubMedDetail', pmid);
-    fillForm(detail);
-    await checkDup(detail.pmid, detail.doi);
-    await refreshJournalInfoBox(detail.journalFull);
-    showToast('已帶入 PubMed 資料，請確認並補齊其他欄位');
-  } catch (e) {
-    showToast('取得資料失敗：' + e.message, true);
-  }
+function fieldCardHTML(label, value) {
+  const shown = (value === '' || value === undefined || value === null) ? '<span class="text-gray-300">—</span>' : String(value);
+  return `
+    <div class="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">${label}</div>
+      <div class="text-sm text-gray-800 break-words">${shown}</div>
+    </div>`;
 }
 
-function fillForm(d) {
-  document.getElementById('f_title').value = d.title || '';
-  document.getElementById('f_authors').value = d.authors || '';
-  document.getElementById('f_journalFull').value = d.journalFull || '';
-  document.getElementById('f_journalAbbr').value = d.journalAbbr || '';
-  document.getElementById('f_pubYear').value = d.pubYear || '';
-  document.getElementById('f_pubMonth').value = d.pubMonth || '';
-  document.getElementById('f_volumeIssuePages').value = d.volumeIssuePages || '';
-  document.getElementById('f_pmid').value = d.pmid || '';
-  document.getElementById('f_doi').value = d.doi || '';
-  document.getElementById('f_citationCount').value = d.citationCount || '';
-  if (d.pubType) {
-    const sel = document.getElementById('f_pubType');
-    const opt = Array.from(sel.options).find(o => d.pubType.toLowerCase().includes(o.value.toLowerCase()));
-    if (opt) sel.value = opt.value;
-  }
+function detailSectionHTML(title, icon, innerHTML) {
+  return `
+    <div class="mb-4">
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><i class="fas ${icon}"></i>${title}</div>
+      ${innerHTML}
+    </div>`;
 }
 
-async function checkDup(pmid, doi) {
-  const box = document.getElementById('dupWarning');
-  box.innerHTML = '';
-  if (!pmid && !doi) return;
-  try {
-    const res = await callServer('checkDuplicate', pmid, doi);
-    if (res.duplicate && res.id !== editingId) {
-      box.innerHTML = `<div class="banner warn">⚠ 偵測到可能重複的資料：《${escapeHtml(res.title)}》（${escapeHtml(res.journalFull)}, ${escapeHtml(res.pubYear)}）已存在於資料庫中，請確認是否重複輸入。</div>`;
-    }
-  } catch (e) { /* 略過檢查錯誤 */ }
-}
+function openDetailModal(rowId) {
+  const record = findRecord(rowId);
+  if (!record) { showToast('找不到該筆紀錄，請重新同步試算表', 'error'); return; }
+  activeDetailRecord = record;
 
-async function refreshJournalInfoBox(journalFull) {
-  const box = document.getElementById('journalInfoBox');
-  if (!journalFull) { box.textContent = '請先於上方輸入期刊全名'; return; }
-  box.innerHTML = '<span class="loading-text"><span class="spinner-dark"></span>比對期刊資料中...</span>';
-  try {
-    // 直接呼叫伺服器端統一的比對邏輯（與「論文彙整」頁面使用同一套標準化規則），
-    // 避免前後端各自比對造成「彙整頁查得到、新增頁查不到」的不一致問題。
-    const j = await callServer('getJournalInfo', journalFull);
-    if (j.found && j.hasMetrics) {
-      box.innerHTML = `<b>${escapeHtml(journalFull)}</b> — Impact Factor: <b>${escapeHtml(String(j.impactFactor))}</b>　領域：<b>${escapeHtml(String(j.fieldName||'—'))}</b>　領域排名：<b>${escapeHtml(String(j.fieldRank||'—'))}</b>`;
-    } else if (j.found) {
-      box.innerHTML = `期刊「<b>${escapeHtml(journalFull)}</b>」已存在於分頁中，但尚未填入當年度指標，請至後台 Journals 分頁手動補齊。`;
-    } else {
-      box.innerHTML = `期刊「<b>${escapeHtml(journalFull)}</b>」為新期刊，儲存後將自動新增至 Journals 分頁，請至後台手動補上 IF／領域／排名。`;
-    }
-  } catch (e) {
-    box.textContent = '期刊資料讀取失敗：' + e.message;
-  }
-}
-document.getElementById('f_journalFull').addEventListener('change', e => refreshJournalInfoBox(e.target.value));
-
-/* ============================================================
- * STEP4: chip 選擇邏輯
- * ============================================================ */
-const singleSelectState = { authorRole: '', category: '', topic: '' };
-let ackSelectState = [];
-
-function selectChip(el, group) {
-  const parent = el.parentElement;
-  parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  singleSelectState[group] = el.dataset.val;
-}
-function toggleAckChip(el) {
-  el.classList.toggle('active');
-  const val = el.dataset.val;
-  if (el.classList.contains('active')) {
-    if (!ackSelectState.includes(val)) ackSelectState.push(val);
-  } else {
-    ackSelectState = ackSelectState.filter(v => v !== val);
-  }
-}
-
-/* ============================================================
- * 表單清空 / 收集 / 儲存
- * ============================================================ */
-function clearForm() {
-  editingId = null;
-  selectedCandidate = null;
-  document.getElementById('searchQuery').value = '';
-  document.getElementById('candidateList').innerHTML = '';
-  document.getElementById('searchStatus').innerHTML = '';
-  document.getElementById('dupWarning').innerHTML = '';
-  ['f_title','f_authors','f_journalFull','f_journalAbbr','f_pubYear','f_pubMonth',
-   'f_volumeIssuePages','f_pmid','f_doi','f_citationCount','f_libraryCode']
-   .forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f_pubType').value = 'Article';
-  document.getElementById('journalInfoBox').textContent = '請先於上方選取或輸入期刊全名';
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  singleSelectState.authorRole = ''; singleSelectState.category = ''; singleSelectState.topic = '';
-  ackSelectState = [];
-  document.getElementById('saveBtn').textContent = '💾 儲存至 Google Sheet';
-}
-
-function collectFormData() {
-  return {
-    title: document.getElementById('f_title').value.trim(),
-    authors: document.getElementById('f_authors').value.trim(),
-    journalFull: document.getElementById('f_journalFull').value.trim(),
-    journalAbbr: document.getElementById('f_journalAbbr').value.trim(),
-    pubYear: document.getElementById('f_pubYear').value.trim(),
-    pubMonth: document.getElementById('f_pubMonth').value.trim(),
-    volumeIssuePages: document.getElementById('f_volumeIssuePages').value.trim(),
-    pmid: document.getElementById('f_pmid').value.trim(),
-    doi: document.getElementById('f_doi').value.trim(),
-    pubType: document.getElementById('f_pubType').value,
-    citationCount: document.getElementById('f_citationCount').value.trim(),
-    authorRole: singleSelectState.authorRole,
-    acknowledgement: ackSelectState.slice(),
-    category: singleSelectState.category,
-    topic: singleSelectState.topic,
-    libraryCode: document.getElementById('f_libraryCode').value.trim()
-  };
-}
-
-async function savePaper() {
-  const data = collectFormData();
-  if (!data.title) { showToast('請輸入論文名稱', true); return; }
-  if (!data.authorRole) { showToast('請選擇作者類別', true); return; }
-  if (!data.category) { showToast('請選擇分類', true); return; }
-  if (!data.topic) { showToast('請選擇主題', true); return; }
-
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>儲存中...';
-  try {
-    if (editingId) {
-      await callServer('updatePaper', editingId, data);
-      showToast('已更新論文資料');
-    } else {
-      await callServer('addPaper', data);
-      showToast('已成功儲存至 Google Sheet');
-    }
-    clearForm();
-    switchView('dash');
-  } catch (e) {
-    showToast('儲存失敗：' + e.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = editingId ? '💾 更新論文資料' : '💾 儲存至 Google Sheet';
-  }
-}
-
-/* ============================================================
- * 修正既有論文（從彙整頁點選「修正」）
- * ============================================================ */
-async function editPaper(id) {
-  try {
-    const p = await callServer('getPaperById', id);
-    if (!p) { showToast('找不到該筆資料', true); return; }
-    clearForm();
-    editingId = id;
-    fillForm({
-      title:p.title, authors:p.authors, journalFull:p.journalFull, journalAbbr:p.journalAbbr,
-      pubYear:p.pubYear, pubMonth:p.pubMonth, volumeIssuePages:p.volumeIssuePages,
-      pmid:p.pmid, doi:p.doi, pubType:p.pubType, citationCount:p.citationCount
-    });
-    document.getElementById('f_libraryCode').value = p.libraryCode || '';
-    setChipActive('grp_authorRole', p.authorRole, 'authorRole');
-    setChipActive('grp_category', p.category, 'category');
-    setChipActive('grp_topic', p.topic, 'topic');
-    const acks = String(p.acknowledgement || '').split(/、|,/).map(s=>s.trim()).filter(Boolean);
-    document.querySelectorAll('#grp_ack .chip').forEach(c => {
-      if (acks.includes(c.dataset.val)) { c.classList.add('active'); }
-    });
-    ackSelectState = acks;
-    await refreshJournalInfoBox(p.journalFull);
-    document.getElementById('saveBtn').textContent = '💾 更新論文資料';
-    switchView('add');
-    window.scrollTo({top:0, behavior:'smooth'});
-    showToast('修正模式：請修改後點選「更新論文資料」');
-  } catch (e) {
-    showToast('讀取失敗：' + e.message, true);
-  }
-}
-function setChipActive(groupId, val, stateKey) {
-  document.querySelectorAll('#' + groupId + ' .chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.val === val);
-  });
-  singleSelectState[stateKey] = val || '';
-}
-
-/* ============================================================
- * 論文彙整：最近 24 小時資料
- * ============================================================ */
-async function loadRecent() {
-  const box = document.getElementById('recentContainer');
-  box.innerHTML = '<div class="empty-state"><span class="spinner-dark"></span> 載入中...</div>';
-  try {
-    const rows = await callServer('getRecentPapers');
-    if (!rows.length) { box.innerHTML = '<div class="empty-state">過去 24 小時內尚無新增資料</div>'; return; }
-    box.innerHTML = renderPaperTable(rows);
-  } catch (e) {
-    box.innerHTML = '<div class="banner warn">載入失敗：' + e.message + '</div>';
-  }
-}
-
-/* ============================================================
- * 彈性篩選
- * ============================================================ */
-function collectFilterCriteria() {
-  return {
-    yearFrom: document.getElementById('fl_yearFrom').value.trim(),
-    yearTo: document.getElementById('fl_yearTo').value.trim(),
-    ifMin: document.getElementById('fl_ifMin').value.trim(),
-    ifMax: document.getElementById('fl_ifMax').value.trim(),
-    authorRole: document.getElementById('fl_authorRole').value,
-    citationMin: document.getElementById('fl_citationMin').value.trim(),
-    acknowledgement: document.getElementById('fl_ack').value,
-    topic: document.getElementById('fl_topic').value,
-    category: document.getElementById('fl_category').value,
-    keyword: document.getElementById('fl_keyword').value.trim()
-  };
-}
-
-function resetFilters() {
-  ['fl_yearFrom','fl_yearTo','fl_ifMin','fl_ifMax','fl_citationMin','fl_keyword'].forEach(id => document.getElementById(id).value = '');
-  ['fl_authorRole','fl_ack','fl_topic','fl_category'].forEach(id => document.getElementById(id).value = '全部');
-  document.getElementById('resultContainer').innerHTML = '<div class="empty-state">請設定篩選條件並點選「篩選檢視」</div>';
-  document.getElementById('resultCount').textContent = '0 筆';
-  currentFilterResults = [];
-}
-
-async function applyFilters() {
-  const box = document.getElementById('resultContainer');
-  box.innerHTML = '<div class="empty-state"><span class="spinner-dark"></span> 篩選中...</div>';
-  try {
-    const criteria = collectFilterCriteria();
-    const rows = await callServer('filterPapers', criteria);
-    currentFilterResults = rows;
-    document.getElementById('resultCount').textContent = rows.length + ' 筆';
-    box.innerHTML = rows.length ? renderPaperTable(rows) : '<div class="empty-state">查無符合條件的資料</div>';
-  } catch (e) {
-    box.innerHTML = '<div class="banner warn">篩選失敗：' + e.message + '</div>';
-  }
-}
-
-/* ============================================================
- * 論文列表渲染（共用於「最近新增」與「篩選結果」）
- * ============================================================ */
-function renderPaperTable(rows) {
-  let html = `<table class="plist"><thead><tr>
-    <th style="width:32%">論文</th><th>作者</th><th>年份</th><th>IF</th><th>引用</th><th>標籤</th><th>PMID / DOI</th><th></th>
-  </tr></thead><tbody>`;
-  rows.forEach(r => {
-    html += `<tr>
-      <td>
-        <div class="p-title">${escapeHtml(r.title)}</div>
-        <div class="p-sub">${escapeHtml(r.journalAbbr || r.journalFull)} · ${escapeHtml(r.volumeIssuePages||'')}</div>
-      </td>
-      <td class="p-sub" style="max-width:180px;">${escapeHtml(shorten(r.authors, 60))}</td>
-      <td class="p-sub">${escapeHtml(r.pubYear||'')}${r.pubMonth ? '/'+escapeHtml(r.pubMonth):''}</td>
-      <td class="p-sub">${escapeHtml(r.impactFactor !== '' && r.impactFactor !== undefined ? String(r.impactFactor) : '–')}</td>
-      <td class="p-sub">${escapeHtml(r.citationCount !== '' && r.citationCount !== undefined ? String(r.citationCount) : '–')}</td>
-      <td>${renderBadges(r)}</td>
-      <td class="p-sub">${escapeHtml(r.pmid||'')}<br>${escapeHtml(r.doi||'')}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="editPaper('${r.id}')">✏ 修正</button></td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  return html;
-}
-
-function renderBadges(r) {
+  const g = groupRecordFields(record);
   let html = '';
-  if (r.authorRole) html += `<span class="badge badge-role">${authorRoleIcon(r.authorRole)} ${escapeHtml(r.authorRole)}</span>`;
-  if (r.category) html += `<span class="badge badge-cat">${r.category==='基礎'?'🧪':'🩺'} ${escapeHtml(r.category)}</span>`;
-  if (r.topic) html += `<span class="badge badge-topic">${escapeHtml(r.topic)}</span>`;
-  const acks = String(r.acknowledgement||'').split(/、|,/).map(s=>s.trim()).filter(Boolean);
-  acks.forEach(a => html += `<span class="badge badge-ack">${escapeHtml(a)}</span>`);
-  return `<div>${html}</div>`;
-}
-function authorRoleIcon(role){
-  if (role === '第一作者') return '①';
-  if (role === '通訊作者') return '✉';
-  return '👥';
+
+  if (g.base.length) {
+    html += detailSectionHTML('客戶基本資料', 'fa-id-card',
+      `<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${g.base.map(f => fieldCardHTML(f.label, f.value)).join('')}</div>`);
+  }
+  if (g.image.length) {
+    html += detailSectionHTML('樣本與影像資訊', 'fa-vial',
+      `<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${g.image.map(f => fieldCardHTML(f.label, f.value)).join('')}</div>`);
+  }
+  const chNums = Object.keys(g.channels)
+    .filter(n => g.channels[n].some(f => f.value !== '' && f.value !== undefined && f.value !== null))
+    .sort((a, b) => a - b);
+  if (chNums.length) {
+    const chBlocks = chNums.map(n => `
+      <div class="border border-gray-200 rounded-lg p-2.5 bg-white">
+        <div class="text-[11px] font-bold text-morandi-sidebar mb-1.5"><i class="fas fa-circle-dot mr-1"></i>Channel ${n}</div>
+        <div class="grid grid-cols-2 gap-1.5">${g.channels[n].map(f => fieldCardHTML(f.label, f.value)).join('')}</div>
+      </div>`).join('');
+    html += detailSectionHTML('通道參數', 'fa-layer-group',
+      `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${chBlocks}</div>`);
+  }
+  if (g.bf.length) {
+    html += detailSectionHTML('可見光拍攝參數', 'fa-lightbulb',
+      `<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${g.bf.map(f => fieldCardHTML(f.label, f.value)).join('')}</div>`);
+  }
+  if (g.status.length) {
+    html += detailSectionHTML('服務時數與狀態', 'fa-clock',
+      `<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${g.status.map(f => fieldCardHTML(f.label, f.value)).join('')}</div>`);
+  }
+  if (g.note.length) {
+    html += detailSectionHTML('研究內容', 'fa-flask',
+      `<div class="grid grid-cols-1 gap-2">${g.note.map(f => fieldCardHTML(f.label, f.value)).join('')}</div>`);
+  }
+  if (g.sys.length) {
+    html += detailSectionHTML('系統資訊', 'fa-clock-rotate-left',
+      `<div class="grid grid-cols-2 gap-2">${g.sys.map(f => fieldCardHTML(f.label, f.value)).join('')}</div>`);
+  }
+
+  document.getElementById('detail-modal-body').innerHTML = html;
+
+  document.getElementById('detail-to-edit-btn').onclick = () => {
+    closeModal('detail-modal');
+    openEditModal(rowId);
+  };
+
+  document.getElementById('detail-modal').classList.add('open');
 }
 
-/* ============================================================
- * Excel 匯出（純前端，使用 SheetJS，效能佳、不占用 Apps Script 執行時間）
- * ============================================================ */
-async function exportExcel() {
-  if (!currentFilterResults.length) { showToast('請先執行篩選檢視，再匯出結果', true); return; }
-  const data = currentFilterResults.map(r => ({
-    '論文名稱': r.title,
-    '全部作者': r.authors,
-    '期刊全名': r.journalFull,
-    '期刊簡稱': r.journalAbbr,
-    '出版年份': r.pubYear,
-    '出版月份': r.pubMonth,
-    '完整卷期頁數': r.volumeIssuePages,
-    '論文類型': r.pubType,
-    'PMID': r.pmid,
-    'DOI': r.doi,
-    '引用次數': r.citationCount,
-    'Impact Factor': r.impactFactor,
-    '領域名稱': r.fieldName,
-    '領域排名': r.fieldRank,
-    '作者類別': r.authorRole,
-    '分類': r.category,
-    '主題': r.topic,
-    '論文致謝情況': r.acknowledgement,
-    '圖書館編碼': r.libraryCode,
-    '建立時間': r.createdAt ? new Date(r.createdAt).toLocaleString('zh-TW') : '',
-    '最後修正時間': r.updatedAt ? new Date(r.updatedAt).toLocaleString('zh-TW') : ''
-  }));
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws['!cols'] = Object.keys(data[0]).map(k => ({ wch: Math.min(Math.max(k.length + 4, 14), 45) }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '篩選結果');
+// 編輯視窗：重建與「新增服務紀錄」完全相同的欄位型態（勾選/鍵入/下拉皆維持原樣），
+// 並用該筆紀錄的資料回填，避免手動逐欄位輸入造成資料型態與前台不一致的問題。
+function openEditModal(rowId) {
+  const record = findRecord(rowId);
+  if (!record) { showToast('找不到該筆紀錄，請重新同步試算表', 'error'); return; }
+  activeDetailRecord = record;
 
-  // 附上完整的期刊指標對照表（第二個分頁），方便核對 IF／領域／排名來源
+  const instCode = INST_SHORT[currentInstrument];
+  document.getElementById('edit-modal-body').innerHTML = buildEditFormHTML(instCode);
+  populateEditForm(instCode, record);
+
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+async function saveEdit() {
+  if (!activeDetailRecord) return;
+  const record = activeDetailRecord;
+  const rowId = record._rowId;
+  const instCode = INST_SHORT[currentInstrument];
+  const domPrefix = `edit-${instCode}`;
+
+  const saveBtn = document.getElementById('edit-save-btn');
+  const originText = saveBtn.innerHTML;
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 更新中...`;
+
+  // 重要：組資料跟送出全部包在同一個 try 裡面，理由同 handleFormSubmit——
+  // 避免欄位讀取失敗時按鈕永遠卡在「更新中...」卻沒有任何錯誤提示。
   try {
-    const journals = await callServer('getAllJournals');
-    if (journals.length) {
-      const jdata = journals.map(j => ({
-        '期刊全名': j.journalFull,
-        '期刊簡稱': j.journalAbbr,
-        'Impact Factor': j.impactFactor,
-        '領域名稱': j.fieldName,
-        '領域排名': j.fieldRank,
-        '更新時間': j.updatedAt ? new Date(j.updatedAt).toLocaleString('zh-TW') : ''
-      }));
-      const jws = XLSX.utils.json_to_sheet(jdata);
-      jws['!cols'] = Object.keys(jdata[0]).map(k => ({ wch: Math.min(Math.max(k.length + 4, 14), 45) }));
-      XLSX.utils.book_append_sheet(wb, jws, '期刊指標對照');
+    // 用與「新增表單」完全相同的邏輯讀取編輯視窗內容，組成結構化資料。
+    // 後端會依欄位標題文字比對寫入正確的儲存格，不用管欄位在 Sheet 上實際排第幾欄，
+    // 也不會動到表單沒有管理的其他欄位（例如手動加在 Sheet 上的備用欄位）。
+    const structured = buildPayloadData(currentInstrument, domPrefix);
+
+    const payload = {
+      instrument: currentInstrument,
+      action: 'update',
+      rowId: rowId,
+      data: structured
+    };
+
+    // 不使用 mode:"no-cors"，改用 Content-Type: text/plain 避免觸發預檢請求(preflight)，
+    // 這樣才讀得到 Google Apps Script 真正回傳的執行結果，而不是永遠假裝成功。
+    const res = await fetch(GAS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (result.status !== 'success') {
+      throw new Error(result.message || '後端回傳未知錯誤');
     }
-  } catch (e) { /* 期刊對照表非必要，失敗不影響主要匯出 */ }
 
-  const today = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `論文彙整_${today}.xlsx`);
-  showToast('已匯出 Excel 檔案');
+    showToast('紀錄已更新，正在重新整理資料...', 'success');
+    closeModal('edit-modal');
+    // 編輯的一定是「目前正在檢視」的儀器，直接強制重新讀取該儀器（繞過快取拿最新資料）
+    await loadInstrumentData(currentInstrument, true);
+  } catch (err) {
+    console.error(err);
+    showToast('更新失敗：' + err.message, 'error');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = originText;
+  }
 }
-
-/* ============================================================
- * 小工具
- * ============================================================ */
-function escapeHtml(s){
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function shorten(s, n){ s = s || ''; return s.length > n ? s.slice(0,n) + '…' : s; }
-
-/* 初始載入 */
-window.addEventListener('DOMContentLoaded', () => {});
 </script>
 </body>
 </html>
+
