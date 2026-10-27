@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研究室論文發表管理系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#1e2a4a;
+    --navy-light:#2c3b63;
+    --teal:#0d9488;
+    --teal-light:#e6f5f3;
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --border:#e2e6ee;
+    --text:#22293a;
+    --text-soft:#6b7280;
+    --amber:#f59e0b;
+    --amber-bg:#fef3e2;
+    --purple:#7c6fe0;
+    --purple-bg:#efedfc;
+    --green-bg:#e7f7ee;
+    --green:#1a9d5c;
+    --red:#e0554f;
+    --radius:14px;
+    --shadow:0 1px 3px rgba(30,42,74,0.08), 0 1px 2px rgba(30,42,74,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+  header.topbar{
+    background:var(--navy);
+    color:#fff;
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky; top:0; z-index:50;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand .logo{
+    width:38px; height:38px; border-radius:10px;
+    background:var(--teal);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:16px;
+  }
+  .brand h1{font-size:16px; margin:0; font-weight:700; letter-spacing:0.3px;}
+  .brand .subtitle{font-size:10.5px; color:#aab3cc; letter-spacing:1px; margin-top:2px;}
+  nav.tabs{display:flex; gap:8px;}
+  nav.tabs button{
+    background:rgba(255,255,255,0.08);
+    color:#dfe4f2;
+    border:1px solid rgba(255,255,255,0.15);
+    padding:9px 16px;
+    border-radius:9px;
+    font-size:13.5px;
+    cursor:pointer;
+    font-weight:600;
+    transition:all .15s;
+  }
+  nav.tabs button.active{background:#fff; color:var(--navy);}
+  nav.tabs button:not(.active):hover{background:rgba(255,255,255,0.16);}
+
+  main{max-width:1180px; margin:0 auto; padding:22px 20px 60px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);
+    padding:22px 24px;
+    margin-bottom:18px;
+  }
+  .card-head{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .eyebrow{
+    font-size:10.5px; font-weight:800; letter-spacing:1px;
+    color:var(--teal); background:var(--teal-light);
+    padding:3px 9px; border-radius:6px;
+  }
+  .card-head h2{font-size:16px; margin:0; font-weight:700;}
+  .card-desc{font-size:12.5px; color:var(--text-soft); margin:-6px 0 14px;}
+
+  label{display:block; font-size:12.5px; font-weight:600; color:var(--text-soft); margin-bottom:5px;}
+  input[type=text], input[type=number], select, textarea{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:9px 11px;
+    font-size:13.5px;
+    background:#fbfcfe;
+    color:var(--text);
+    font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--teal); outline-offset:1px; background:#fff;}
+  textarea{resize:vertical; min-height:44px;}
+  .field{margin-bottom:14px;}
+  .row{display:grid; gap:14px;}
+  .row.cols-2{grid-template-columns:1fr 1fr;}
+  .row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  .row.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  @media(max-width:760px){ .row.cols-2,.row.cols-3,.row.cols-4{grid-template-columns:1fr;} }
+
+  .search-row{display:flex; gap:10px;}
+  .search-row input{flex:1;}
+  button.btn{
+    border:none; border-radius:9px; padding:10px 18px;
+    font-size:13.5px; font-weight:700; cursor:pointer;
+    transition:filter .15s; white-space:nowrap;
+  }
+  button.btn:hover{filter:brightness(0.94);}
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-navy{background:var(--navy); color:#fff;}
+  .btn-ghost{background:#fff; color:var(--text); border:1px solid var(--border);}
+  .btn-danger-ghost{background:#fff; color:var(--red); border:1px solid #f2c9c7;}
+  .btn-sm{padding:6px 11px; font-size:12px; border-radius:7px;}
+  .btn-green{background:var(--green); color:#fff;}
+
+  .candidates{display:grid; gap:10px; margin-top:14px;}
+  .candidate{
+    border:1.5px solid var(--border); border-radius:11px; padding:12px 14px;
+    cursor:pointer; transition:all .15s; background:#fbfcfe;
+  }
+  .candidate:hover{border-color:var(--teal); background:var(--teal-light);}
+  .candidate.selected{border-color:var(--teal); background:var(--teal-light); box-shadow:0 0 0 1px var(--teal);}
+  .candidate .c-title{font-weight:700; font-size:13.5px; margin-bottom:4px; line-height:1.4;}
+  .candidate .c-meta{font-size:12px; color:var(--text-soft);}
+
+  .banner{
+    display:flex; align-items:center; gap:10px;
+    padding:11px 14px; border-radius:10px; font-size:13px; font-weight:600;
+    margin:14px 0;
+  }
+  .banner.warn{background:var(--amber-bg); color:#8a5a10; border:1px solid #f3d9a6;}
+  .banner.info{background:var(--teal-light); color:#0b6b62; border:1px solid #b8e4de;}
+  .banner.ok{background:var(--green-bg); color:#136b41; border:1px solid #b8e8cd;}
+
+  .chip-group{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    border:1.5px solid var(--border); background:#fff; color:var(--text);
+    padding:7px 14px; border-radius:20px; font-size:12.5px; font-weight:600;
+    cursor:pointer; transition:all .12s;
+  }
+  .chip.active{border-color:var(--teal); background:var(--teal); color:#fff;}
+  .chip.ack.active{border-color:var(--purple); background:var(--purple); color:#fff;}
+
+  .form-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border);}
+
+  /* table-ish list rows for recent / results */
+  .plist{width:100%; border-collapse:collapse;}
+  .plist th{
+    text-align:left; font-size:11.5px; color:var(--text-soft); font-weight:700;
+    padding:9px 10px; border-bottom:2px solid var(--border); white-space:nowrap;
+  }
+  .plist td{padding:12px 10px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top;}
+  .plist tr:hover td{background:#fafbfd;}
+  .p-title{font-weight:700; font-size:13.5px; line-height:1.4; margin-bottom:3px;}
+  .p-sub{font-size:11.5px; color:var(--text-soft);}
+  .badge{
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:6px; margin:1px 3px 1px 0;
+  }
+  .badge-role{background:var(--purple-bg); color:var(--purple);}
+  .badge-cat{background:var(--amber-bg); color:#8a5a10;}
+  .badge-topic{background:var(--teal-light); color:#0b6b62;}
+  .badge-ack{background:#eef1f8; color:#4a5578;}
+  .empty-state{text-align:center; padding:40px 20px; color:var(--text-soft); font-size:13px;}
+
+  /* filter grid */
+  .filter-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:14px;}
+  @media(max-width:980px){ .filter-grid{grid-template-columns:repeat(3,1fr);} }
+  @media(max-width:600px){ .filter-grid{grid-template-columns:repeat(2,1fr);} }
+  .filter-actions{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+  .result-count{font-size:12.5px; color:var(--text-soft); font-weight:600;}
+
+  .toast{
+    position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff;
+    padding:13px 20px; border-radius:10px; font-size:13px; font-weight:600;
+    box-shadow:0 6px 20px rgba(0,0,0,0.2); z-index:200; opacity:0; transform:translateY(10px);
+    transition:all .25s;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast.err{background:var(--red);}
+
+  .spinner{
+    display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; margin-right:6px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{font-size:12.5px; color:var(--text-soft); display:flex; align-items:center; gap:8px;}
+  .spinner-dark{border:2px solid #d7dce6; border-top-color:var(--teal); width:14px; height:14px; border-radius:50%; display:inline-block; animation:spin .7s linear infinite;}
+
+  .journal-info-box{
+    background:#fbfcfe; border:1px dashed var(--border); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--text-soft);
+  }
+  .journal-info-box b{color:var(--text);}
+
+  ::placeholder{color:#a3aabb;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">Dx</div>
+    <div>
+      <h1>研究室論文發表管理系統</h1>
+      <div class="subtitle">PUBMED-LINKED PUBLICATION TRACKER</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button id="tabAddBtn" class="active" onclick="switchView('add')">＋ 新增論文資料</button>
+    <button id="tabDashBtn" onclick="switchView('dash')">論文彙整</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============ VIEW 1: 新增論文資料 ============ -->
+<div id="view-add" class="view active">
+
+  <div class="card">
+    <div class="card-head"><span class="eyebrow">STEP 1</span><h2>PubMed 論文查詢</h2></div>
+    <p class="card-desc">輸入論文名稱（建議貼上完整或接近完整的英文標題）以自 PubMed 取得正確資料，避免手動輸入或 AI 推測造成錯誤。</p>
+    <div class="search-row">
+      <input type="text" id="searchQuery" placeholder="例：Acute kidney injury biomarkers in critically ill patients">
+      <button class="btn btn-primary" onclick="doSearch()">🔍 搜尋</button>
+    </div>
+    <div id="searchStatus"></div>
+    <div id="candidateList" class="candidates"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="eyebrow">STEP 2</span><h2>自動辨識資料（可手動修正）</h2></div>
+    <div id="dupWarning"></div>
+
+    <div class="field">
+      <label>論文名稱</label>
+      <textarea id="f_title" placeholder="選取候選論文後自動帶入，或手動輸入"></textarea>
+    </div>
+    <div class="field">
+      <label>全部作者</label>
+      <textarea id="f_authors" placeholder="Lee JH, Chen YT, Wang KC..."></textarea>
+    </div>
+    <div class="row cols-2">
+      <div class="field"><label>期刊全名</label><input type="text" id="f_journalFull" placeholder="例：New England Journal of Medicine"></div>
+      <div class="field"><label>期刊簡稱（用於 Cite 顯示）</label><input type="text" id="f_journalAbbr" placeholder="例：N Engl J Med"></div>
+    </div>
+    <div class="row cols-4">
+      <div class="field"><label>出版年份</label><input type="text" id="f_pubYear"></div>
+      <div class="field"><label>出版月份</label><input type="text" id="f_pubMonth"></div>
+      <div class="field"><label>完整卷期頁數</label><input type="text" id="f_volumeIssuePages" placeholder="82(6):1046-1055"></div>
+      <div class="field"><label>論文類型</label>
+        <select id="f_pubType">
+          <option>Article</option><option>Review</option><option>Meta-Analysis</option>
+          <option>Case Report</option><option>Letter</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="row cols-3">
+      <div class="field"><label>PMID</label><input type="text" id="f_pmid"></div>
+      <div class="field"><label>DOI</label><input type="text" id="f_doi"></div>
+      <div class="field"><label>引用次數</label><input type="number" id="f_citationCount" placeholder="來自 NIH iCite"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="eyebrow">STEP 3</span><h2>期刊當年度指標</h2></div>
+    <p class="card-desc">此區資料來自後台「Journals」分頁，依期刊全名自動比對帶入；如需更新請至 Google Sheet 手動修改，將自動同步至所有相同期刊之論文。</p>
+    <div id="journalInfoBox" class="journal-info-box">請先於上方選取或輸入期刊全名</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="eyebrow">STEP 4</span><h2>手動輸入資料</h2></div>
+    <div class="row cols-2">
+      <div class="field">
+        <label>作者類別 <span style="color:var(--red)">＊單選</span></label>
+        <div class="chip-group" id="grp_authorRole">
+          <button type="button" class="chip" data-val="通訊作者" onclick="selectChip(this,'authorRole')">通訊作者</button>
+          <button type="button" class="chip" data-val="第一作者" onclick="selectChip(this,'authorRole')">第一作者</button>
+          <button type="button" class="chip" data-val="共同作者" onclick="selectChip(this,'authorRole')">共同作者</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>分類 <span style="color:var(--red)">＊單選</span></label>
+        <div class="chip-group" id="grp_category">
+          <button type="button" class="chip" data-val="臨床" onclick="selectChip(this,'category')">臨床</button>
+          <button type="button" class="chip" data-val="基礎" onclick="selectChip(this,'category')">基礎</button>
+        </div>
+      </div>
+    </div>
+    <div class="row cols-2">
+      <div class="field">
+        <label>論文致謝情況 <span style="color:var(--purple)">複選</span></label>
+        <div class="chip-group" id="grp_ack">
+          <button type="button" class="chip ack" data-val="共同研究室" onclick="toggleAckChip(this)">共同研究室</button>
+          <button type="button" class="chip ack" data-val="國科會" onclick="toggleAckChip(this)">國科會</button>
+          <button type="button" class="chip ack" data-val="台大醫院" onclick="toggleAckChip(this)">台大醫院</button>
+          <button type="button" class="chip ack" data-val="李林計畫" onclick="toggleAckChip(this)">李林計畫</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>主題 <span style="color:var(--red)">＊單選</span></label>
+        <div class="chip-group" id="grp_topic">
+          <button type="button" class="chip" data-val="AKI" onclick="selectChip(this,'topic')">AKI</button>
+          <button type="button" class="chip" data-val="PA" onclick="selectChip(this,'topic')">PA</button>
+          <button type="button" class="chip" data-val="其他" onclick="selectChip(this,'topic')">其他</button>
+        </div>
+      </div>
+    </div>
+    <div class="row cols-2">
+      <div class="field"><label>圖書館編碼</label><input type="text" id="f_libraryCode"></div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="clearForm()">清空表單</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="savePaper()">💾 儲存至 Google Sheet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VIEW 2: 論文彙整 ============ -->
+<div id="view-dash" class="view">
+
+  <div class="card">
+    <div class="card-head" style="justify-content:space-between; display:flex;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="eyebrow">RECENT</span><h2>🕐 最近 24 小時內新增的資料</h2>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadRecent()">↻ 重新整理</button>
+    </div>
+    <p class="card-desc">顯示過去 24 小時內新增的論文（含直接於後台 Google Sheet 新增者），可直接點選「修正」更新內容。</p>
+    <div id="recentContainer"><div class="empty-state">載入中...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="eyebrow">FILTER</span><h2>📋 彈性篩選 / 統計</h2></div>
+    <div class="filter-grid">
+      <div class="field"><label>年份（起）</label><input type="text" id="fl_yearFrom" placeholder="例如 2020"></div>
+      <div class="field"><label>年份（迄）</label><input type="text" id="fl_yearTo" placeholder="例如 2025"></div>
+      <div class="field"><label>IF（最小值）</label><input type="text" id="fl_ifMin" placeholder="例如 6"></div>
+      <div class="field"><label>IF（最大值）</label><input type="text" id="fl_ifMax"></div>
+      <div class="field"><label>作者類別</label>
+        <select id="fl_authorRole"><option>全部</option><option>通訊作者</option><option>第一作者</option><option>共同作者</option></select>
+      </div>
+      <div class="field"><label>引用次數（最小值）</label><input type="text" id="fl_citationMin" placeholder="例如 10"></div>
+    </div>
+    <div class="filter-grid">
+      <div class="field"><label>致謝情況</label>
+        <select id="fl_ack"><option>全部</option><option>共同研究室</option><option>國科會</option><option>台大醫院</option><option>李林計畫</option></select>
+      </div>
+      <div class="field"><label>主題</label>
+        <select id="fl_topic"><option>全部</option><option>AKI</option><option>PA</option><option>其他</option></select>
+      </div>
+      <div class="field"><label>分類</label>
+        <select id="fl_category"><option>全部</option><option>臨床</option><option>基礎</option></select>
+      </div>
+      <div class="field" style="grid-column:span 3;"><label>關鍵字（論文名稱／期刊／作者）</label><input type="text" id="fl_keyword" placeholder="輸入關鍵字後按「篩選檢視」"></div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-ghost" onclick="resetFilters()">重設篩選</button>
+      <button class="btn btn-primary" onclick="applyFilters()">篩選檢視</button>
+      <button class="btn btn-green" onclick="exportExcel()">⬇ 匯出 Excel</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" style="justify-content:space-between; display:flex;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="eyebrow">RESULT</span><h2>📄 篩選結果</h2>
+      </div>
+      <div class="result-count" id="resultCount">0 筆</div>
+    </div>
+    <div id="resultContainer"><div class="empty-state">請設定篩選條件並點選「篩選檢視」</div></div>
+  </div>
+</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+ * 全域狀態
+ * ============================================================ */
+let selectedCandidate = null;
+let editingId = null;         // 若非 null 表示目前為「修正」模式
+let currentFilterResults = [];
+let journalCache = {};        // journalFull(lower) -> {impactFactor, fieldName, fieldRank}
+
+const ACK_OPTIONS = ['共同研究室','國科會','台大醫院','李林計畫'];
+
+/* ============================================================
+ * 共用：呼叫後端 (Promise 包裝)
+ * ============================================================ */
+function callServer(fnName, ...args) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(err => reject(err))
+      [fnName](...args);
+  });
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' err' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3200);
+}
+
+/* ============================================================
+ * 頁面切換
+ * ============================================================ */
+function switchView(name) {
+  document.getElementById('view-add').classList.toggle('active', name === 'add');
+  document.getElementById('view-dash').classList.toggle('active', name === 'dash');
+  document.getElementById('tabAddBtn').classList.toggle('active', name === 'add');
+  document.getElementById('tabDashBtn').classList.toggle('active', name === 'dash');
+  if (name === 'dash') { loadRecent(); }
+}
+
+/* ============================================================
+ * STEP1: PubMed 搜尋
+ * ============================================================ */
+async function doSearch() {
+  const q = document.getElementById('searchQuery').value.trim();
+  if (!q) { showToast('請輸入論文名稱', true); return; }
+  const statusEl = document.getElementById('searchStatus');
+  statusEl.innerHTML = '<div class="loading-text"><span class="spinner-dark"></span>正在查詢 PubMed...</div>';
+  document.getElementById('candidateList').innerHTML = '';
+  try {
+    const results = await callServer('searchPubMedCandidates', q);
+    statusEl.innerHTML = '';
+    if (!results.length) {
+      statusEl.innerHTML = '<div class="banner warn">查無相符論文，請確認標題是否正確，或改用手動輸入。</div>';
+      return;
+    }
+    renderCandidates(results);
+  } catch (e) {
+    statusEl.innerHTML = '<div class="banner warn">查詢失敗：' + e.message + '</div>';
+  }
+}
+
+function renderCandidates(results) {
+  const wrap = document.getElementById('candidateList');
+  wrap.innerHTML = '';
+  results.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'candidate';
+    div.innerHTML = `<div class="c-title">${escapeHtml(r.title)}</div>
+      <div class="c-meta">${escapeHtml(r.journalAbbr)} · ${escapeHtml(r.pubYear)} · ${escapeHtml(r.authorsShort)} · PMID ${r.pmid}</div>`;
+    div.onclick = () => selectCandidate(r.pmid, div);
+    wrap.appendChild(div);
+  });
+}
+
+async function selectCandidate(pmid, el) {
+  document.querySelectorAll('.candidate').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  showToast('正在自 PubMed 取得完整資料...');
+  try {
+    const detail = await callServer('getPubMedDetail', pmid);
+    fillForm(detail);
+    await checkDup(detail.pmid, detail.doi);
+    await refreshJournalInfoBox(detail.journalFull);
+    showToast('已帶入 PubMed 資料，請確認並補齊其他欄位');
+  } catch (e) {
+    showToast('取得資料失敗：' + e.message, true);
+  }
+}
+
+function fillForm(d) {
+  document.getElementById('f_title').value = d.title || '';
+  document.getElementById('f_authors').value = d.authors || '';
+  document.getElementById('f_journalFull').value = d.journalFull || '';
+  document.getElementById('f_journalAbbr').value = d.journalAbbr || '';
+  document.getElementById('f_pubYear').value = d.pubYear || '';
+  document.getElementById('f_pubMonth').value = d.pubMonth || '';
+  document.getElementById('f_volumeIssuePages').value = d.volumeIssuePages || '';
+  document.getElementById('f_pmid').value = d.pmid || '';
+  document.getElementById('f_doi').value = d.doi || '';
+  document.getElementById('f_citationCount').value = d.citationCount || '';
+  if (d.pubType) {
+    const sel = document.getElementById('f_pubType');
+    const opt = Array.from(sel.options).find(o => d.pubType.toLowerCase().includes(o.value.toLowerCase()));
+    if (opt) sel.value = opt.value;
+  }
+}
+
+async function checkDup(pmid, doi) {
+  const box = document.getElementById('dupWarning');
+  box.innerHTML = '';
+  if (!pmid && !doi) return;
+  try {
+    const res = await callServer('checkDuplicate', pmid, doi);
+    if (res.duplicate && res.id !== editingId) {
+      box.innerHTML = `<div class="banner warn">⚠ 偵測到可能重複的資料：《${escapeHtml(res.title)}》（${escapeHtml(res.journalFull)}, ${escapeHtml(res.pubYear)}）已存在於資料庫中，請確認是否重複輸入。</div>`;
+    }
+  } catch (e) { /* 略過檢查錯誤 */ }
+}
+
+async function refreshJournalInfoBox(journalFull) {
+  const box = document.getElementById('journalInfoBox');
+  if (!journalFull) { box.textContent = '請先於上方輸入期刊全名'; return; }
+  box.innerHTML = '<span class="loading-text"><span class="spinner-dark"></span>比對期刊資料中...</span>';
+  try {
+    // 直接呼叫伺服器端統一的比對邏輯（與「論文彙整」頁面使用同一套標準化規則），
+    // 避免前後端各自比對造成「彙整頁查得到、新增頁查不到」的不一致問題。
+    const j = await callServer('getJournalInfo', journalFull);
+    if (j.found && j.hasMetrics) {
+      box.innerHTML = `<b>${escapeHtml(journalFull)}</b> — Impact Factor: <b>${escapeHtml(String(j.impactFactor))}</b>　領域：<b>${escapeHtml(String(j.fieldName||'—'))}</b>　領域排名：<b>${escapeHtml(String(j.fieldRank||'—'))}</b>`;
+    } else if (j.found) {
+      box.innerHTML = `期刊「<b>${escapeHtml(journalFull)}</b>」已存在於分頁中，但尚未填入當年度指標，請至後台 Journals 分頁手動補齊。`;
+    } else {
+      box.innerHTML = `期刊「<b>${escapeHtml(journalFull)}</b>」為新期刊，儲存後將自動新增至 Journals 分頁，請至後台手動補上 IF／領域／排名。`;
+    }
+  } catch (e) {
+    box.textContent = '期刊資料讀取失敗：' + e.message;
+  }
+}
+document.getElementById('f_journalFull').addEventListener('change', e => refreshJournalInfoBox(e.target.value));
+
+/* ============================================================
+ * STEP4: chip 選擇邏輯
+ * ============================================================ */
+const singleSelectState = { authorRole: '', category: '', topic: '' };
+let ackSelectState = [];
+
+function selectChip(el, group) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  singleSelectState[group] = el.dataset.val;
+}
+function toggleAckChip(el) {
+  el.classList.toggle('active');
+  const val = el.dataset.val;
+  if (el.classList.contains('active')) {
+    if (!ackSelectState.includes(val)) ackSelectState.push(val);
+  } else {
+    ackSelectState = ackSelectState.filter(v => v !== val);
+  }
+}
+
+/* ============================================================
+ * 表單清空 / 收集 / 儲存
+ * ============================================================ */
+function clearForm() {
+  editingId = null;
+  selectedCandidate = null;
+  document.getElementById('searchQuery').value = '';
+  document.getElementById('candidateList').innerHTML = '';
+  document.getElementById('searchStatus').innerHTML = '';
+  document.getElementById('dupWarning').innerHTML = '';
+  ['f_title','f_authors','f_journalFull','f_journalAbbr','f_pubYear','f_pubMonth',
+   'f_volumeIssuePages','f_pmid','f_doi','f_citationCount','f_libraryCode']
+   .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_pubType').value = 'Article';
+  document.getElementById('journalInfoBox').textContent = '請先於上方選取或輸入期刊全名';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  singleSelectState.authorRole = ''; singleSelectState.category = ''; singleSelectState.topic = '';
+  ackSelectState = [];
+  document.getElementById('saveBtn').textContent = '💾 儲存至 Google Sheet';
+}
+
+function collectFormData() {
+  return {
+    title: document.getElementById('f_title').value.trim(),
+    authors: document.getElementById('f_authors').value.trim(),
+    journalFull: document.getElementById('f_journalFull').value.trim(),
+    journalAbbr: document.getElementById('f_journalAbbr').value.trim(),
+    pubYear: document.getElementById('f_pubYear').value.trim(),
+    pubMonth: document.getElementById('f_pubMonth').value.trim(),
+    volumeIssuePages: document.getElementById('f_volumeIssuePages').value.trim(),
+    pmid: document.getElementById('f_pmid').value.trim(),
+    doi: document.getElementById('f_doi').value.trim(),
+    pubType: document.getElementById('f_pubType').value,
+    citationCount: document.getElementById('f_citationCount').value.trim(),
+    authorRole: singleSelectState.authorRole,
+    acknowledgement: ackSelectState.slice(),
+    category: singleSelectState.category,
+    topic: singleSelectState.topic,
+    libraryCode: document.getElementById('f_libraryCode').value.trim()
+  };
+}
+
+async function savePaper() {
+  const data = collectFormData();
+  if (!data.title) { showToast('請輸入論文名稱', true); return; }
+  if (!data.authorRole) { showToast('請選擇作者類別', true); return; }
+  if (!data.category) { showToast('請選擇分類', true); return; }
+  if (!data.topic) { showToast('請選擇主題', true); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>儲存中...';
+  try {
+    if (editingId) {
+      await callServer('updatePaper', editingId, data);
+      showToast('已更新論文資料');
+    } else {
+      await callServer('addPaper', data);
+      showToast('已成功儲存至 Google Sheet');
+    }
+    clearForm();
+    switchView('dash');
+  } catch (e) {
+    showToast('儲存失敗：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editingId ? '💾 更新論文資料' : '💾 儲存至 Google Sheet';
+  }
+}
+
+/* ============================================================
+ * 修正既有論文（從彙整頁點選「修正」）
+ * ============================================================ */
+async function editPaper(id) {
+  try {
+    const p = await callServer('getPaperById', id);
+    if (!p) { showToast('找不到該筆資料', true); return; }
+    clearForm();
+    editingId = id;
+    fillForm({
+      title:p.title, authors:p.authors, journalFull:p.journalFull, journalAbbr:p.journalAbbr,
+      pubYear:p.pubYear, pubMonth:p.pubMonth, volumeIssuePages:p.volumeIssuePages,
+      pmid:p.pmid, doi:p.doi, pubType:p.pubType, citationCount:p.citationCount
+    });
+    document.getElementById('f_libraryCode').value = p.libraryCode || '';
+    setChipActive('grp_authorRole', p.authorRole, 'authorRole');
+    setChipActive('grp_category', p.category, 'category');
+    setChipActive('grp_topic', p.topic, 'topic');
+    const acks = String(p.acknowledgement || '').split(/、|,/).map(s=>s.trim()).filter(Boolean);
+    document.querySelectorAll('#grp_ack .chip').forEach(c => {
+      if (acks.includes(c.dataset.val)) { c.classList.add('active'); }
+    });
+    ackSelectState = acks;
+    await refreshJournalInfoBox(p.journalFull);
+    document.getElementById('saveBtn').textContent = '💾 更新論文資料';
+    switchView('add');
+    window.scrollTo({top:0, behavior:'smooth'});
+    showToast('修正模式：請修改後點選「更新論文資料」');
+  } catch (e) {
+    showToast('讀取失敗：' + e.message, true);
+  }
+}
+function setChipActive(groupId, val, stateKey) {
+  document.querySelectorAll('#' + groupId + ' .chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.val === val);
+  });
+  singleSelectState[stateKey] = val || '';
+}
+
+/* ============================================================
+ * 論文彙整：最近 24 小時資料
+ * ============================================================ */
+async function loadRecent() {
+  const box = document.getElementById('recentContainer');
+  box.innerHTML = '<div class="empty-state"><span class="spinner-dark"></span> 載入中...</div>';
+  try {
+    const rows = await callServer('getRecentPapers');
+    if (!rows.length) { box.innerHTML = '<div class="empty-state">過去 24 小時內尚無新增資料</div>'; return; }
+    box.innerHTML = renderPaperTable(rows);
+  } catch (e) {
+    box.innerHTML = '<div class="banner warn">載入失敗：' + e.message + '</div>';
+  }
+}
+
+/* ============================================================
+ * 彈性篩選
+ * ============================================================ */
+function collectFilterCriteria() {
+  return {
+    yearFrom: document.getElementById('fl_yearFrom').value.trim(),
+    yearTo: document.getElementById('fl_yearTo').value.trim(),
+    ifMin: document.getElementById('fl_ifMin').value.trim(),
+    ifMax: document.getElementById('fl_ifMax').value.trim(),
+    authorRole: document.getElementById('fl_authorRole').value,
+    citationMin: document.getElementById('fl_citationMin').value.trim(),
+    acknowledgement: document.getElementById('fl_ack').value,
+    topic: document.getElementById('fl_topic').value,
+    category: document.getElementById('fl_category').value,
+    keyword: document.getElementById('fl_keyword').value.trim()
+  };
+}
+
+function resetFilters() {
+  ['fl_yearFrom','fl_yearTo','fl_ifMin','fl_ifMax','fl_citationMin','fl_keyword'].forEach(id => document.getElementById(id).value = '');
+  ['fl_authorRole','fl_ack','fl_topic','fl_category'].forEach(id => document.getElementById(id).value = '全部');
+  document.getElementById('resultContainer').innerHTML = '<div class="empty-state">請設定篩選條件並點選「篩選檢視」</div>';
+  document.getElementById('resultCount').textContent = '0 筆';
+  currentFilterResults = [];
+}
+
+async function applyFilters() {
+  const box = document.getElementById('resultContainer');
+  box.innerHTML = '<div class="empty-state"><span class="spinner-dark"></span> 篩選中...</div>';
+  try {
+    const criteria = collectFilterCriteria();
+    const rows = await callServer('filterPapers', criteria);
+    currentFilterResults = rows;
+    document.getElementById('resultCount').textContent = rows.length + ' 筆';
+    box.innerHTML = rows.length ? renderPaperTable(rows) : '<div class="empty-state">查無符合條件的資料</div>';
+  } catch (e) {
+    box.innerHTML = '<div class="banner warn">篩選失敗：' + e.message + '</div>';
+  }
+}
+
+/* ============================================================
+ * 論文列表渲染（共用於「最近新增」與「篩選結果」）
+ * ============================================================ */
+function renderPaperTable(rows) {
+  let html = `<table class="plist"><thead><tr>
+    <th style="width:32%">論文</th><th>作者</th><th>年份</th><th>IF</th><th>引用</th><th>標籤</th><th>PMID / DOI</th><th></th>
+  </tr></thead><tbody>`;
+  rows.forEach(r => {
+    html += `<tr>
+      <td>
+        <div class="p-title">${escapeHtml(r.title)}</div>
+        <div class="p-sub">${escapeHtml(r.journalAbbr || r.journalFull)} · ${escapeHtml(r.volumeIssuePages||'')}</div>
+      </td>
+      <td class="p-sub" style="max-width:180px;">${escapeHtml(shorten(r.authors, 60))}</td>
+      <td class="p-sub">${escapeHtml(r.pubYear||'')}${r.pubMonth ? '/'+escapeHtml(r.pubMonth):''}</td>
+      <td class="p-sub">${escapeHtml(r.impactFactor !== '' && r.impactFactor !== undefined ? String(r.impactFactor) : '–')}</td>
+      <td class="p-sub">${escapeHtml(r.citationCount !== '' && r.citationCount !== undefined ? String(r.citationCount) : '–')}</td>
+      <td>${renderBadges(r)}</td>
+      <td class="p-sub">${escapeHtml(r.pmid||'')}<br>${escapeHtml(r.doi||'')}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="editPaper('${r.id}')">✏ 修正</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderBadges(r) {
+  let html = '';
+  if (r.authorRole) html += `<span class="badge badge-role">${authorRoleIcon(r.authorRole)} ${escapeHtml(r.authorRole)}</span>`;
+  if (r.category) html += `<span class="badge badge-cat">${r.category==='基礎'?'🧪':'🩺'} ${escapeHtml(r.category)}</span>`;
+  if (r.topic) html += `<span class="badge badge-topic">${escapeHtml(r.topic)}</span>`;
+  const acks = String(r.acknowledgement||'').split(/、|,/).map(s=>s.trim()).filter(Boolean);
+  acks.forEach(a => html += `<span class="badge badge-ack">${escapeHtml(a)}</span>`);
+  return `<div>${html}</div>`;
+}
+function authorRoleIcon(role){
+  if (role === '第一作者') return '①';
+  if (role === '通訊作者') return '✉';
+  return '👥';
+}
+
+/* ============================================================
+ * Excel 匯出（純前端，使用 SheetJS，效能佳、不占用 Apps Script 執行時間）
+ * ============================================================ */
+async function exportExcel() {
+  if (!currentFilterResults.length) { showToast('請先執行篩選檢視，再匯出結果', true); return; }
+  const data = currentFilterResults.map(r => ({
+    '論文名稱': r.title,
+    '全部作者': r.authors,
+    '期刊全名': r.journalFull,
+    '期刊簡稱': r.journalAbbr,
+    '出版年份': r.pubYear,
+    '出版月份': r.pubMonth,
+    '完整卷期頁數': r.volumeIssuePages,
+    '論文類型': r.pubType,
+    'PMID': r.pmid,
+    'DOI': r.doi,
+    '引用次數': r.citationCount,
+    'Impact Factor': r.impactFactor,
+    '領域名稱': r.fieldName,
+    '領域排名': r.fieldRank,
+    '作者類別': r.authorRole,
+    '分類': r.category,
+    '主題': r.topic,
+    '論文致謝情況': r.acknowledgement,
+    '圖書館編碼': r.libraryCode,
+    '建立時間': r.createdAt ? new Date(r.createdAt).toLocaleString('zh-TW') : '',
+    '最後修正時間': r.updatedAt ? new Date(r.updatedAt).toLocaleString('zh-TW') : ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = Object.keys(data[0]).map(k => ({ wch: Math.min(Math.max(k.length + 4, 14), 45) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '篩選結果');
+
+  // 附上完整的期刊指標對照表（第二個分頁），方便核對 IF／領域／排名來源
+  try {
+    const journals = await callServer('getAllJournals');
+    if (journals.length) {
+      const jdata = journals.map(j => ({
+        '期刊全名': j.journalFull,
+        '期刊簡稱': j.journalAbbr,
+        'Impact Factor': j.impactFactor,
+        '領域名稱': j.fieldName,
+        '領域排名': j.fieldRank,
+        '更新時間': j.updatedAt ? new Date(j.updatedAt).toLocaleString('zh-TW') : ''
+      }));
+      const jws = XLSX.utils.json_to_sheet(jdata);
+      jws['!cols'] = Object.keys(jdata[0]).map(k => ({ wch: Math.min(Math.max(k.length + 4, 14), 45) }));
+      XLSX.utils.book_append_sheet(wb, jws, '期刊指標對照');
+    }
+  } catch (e) { /* 期刊對照表非必要，失敗不影響主要匯出 */ }
+
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `論文彙整_${today}.xlsx`);
+  showToast('已匯出 Excel 檔案');
+}
+
+/* ============================================================
+ * 小工具
+ * ============================================================ */
+function escapeHtml(s){
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function shorten(s, n){ s = s || ''; return s.length > n ? s.slice(0,n) + '…' : s; }
+
+/* 初始載入 */
+window.addEventListener('DOMContentLoaded', () => {});
+</script>
+</body>
+</html>
